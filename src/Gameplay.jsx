@@ -6,6 +6,8 @@ import priyaPortrait from './assets/targets/priya-nandakumar.jpg'
 import derekPortrait from './assets/targets/derek-combs.jpg'
 import sarahPortrait from './assets/targets/sarah-lindqvist.jpg'
 import marcusPortrait from './assets/targets/marcus-reyes.jpg'
+import { defenses } from './gameLogic/defense/defenseConfig.js'
+import { resolveTurn } from './gameLogic/resolveTurn.js'
 
 const targets = [
   {
@@ -14,8 +16,8 @@ const targets = [
     traits: ['New to the role and eager to help', 'Spends downtime on Facebook', 'More cautious with unexpected calls'],
     scenario: 'The service desk queue is building during a busy afternoon when a staff member reports being locked out before an important meeting. The request includes familiar company language, but some details still need to be checked against the ticketing system. Jordan is handling the queue without direct supervision and wants to resolve the issue without delaying the employee.',
     transcript: 'Iris: Jordan joined Solstice six months ago after completing his first industry certification. He is friendly, capable and keen to show that he can manage requests independently, although he is still learning when to slow down and escalate. He sometimes checks Facebook during quiet periods, but a prank caller last month has made him more cautious whenever an unfamiliar voice contacts the desk.',
-    strengths: { phishing: ['email', 'teams'], social: ['facebook'] },
-    weaknesses: { phishing: ['vishing'] },
+    vulnerabilities: { phishing: ['email', 'teams'], social: ['facebook'] },
+    resistances: { phishing: ['vishing'] },
   },
   {
     id: 'priya', name: 'Priya Nandakumar', initials: 'PN', role: 'Receptionist', tier: 1,
@@ -23,8 +25,8 @@ const targets = [
     traits: ['Handles constant calls and interruptions', 'Strict about visitor sign-in procedure', 'Posts about workdays on Instagram'],
     scenario: 'The reception area is crowded as Priya manages visitors, deliveries and several incoming calls at once. A request arrives during the busiest part of the shift and appears connected to normal front-desk activity. Priya has limited time to investigate it, but she is responsible for keeping company procedures consistent while helping people quickly.',
     transcript: 'Iris: Priya has worked at the front desk for five years and remains calm when several tasks compete for her attention. She follows the visitor sign-in process carefully because the rule was strengthened after an earlier security concern. Outside work she posts ordinary updates about busy days on Instagram, while the constant volume of unscheduled calls sometimes gives her very little time to assess each caller.',
-    strengths: { phishing: ['vishing'], social: ['instagram'] },
-    weaknesses: { phishing: ['email', 'teams'] },
+    vulnerabilities: { phishing: ['vishing'], social: ['instagram'] },
+    resistances: { phishing: ['email', 'teams'] },
   },
   {
     id: 'derek', name: 'Derek Combs', initials: 'DC', role: 'IT Manager', tier: 3,
@@ -32,8 +34,8 @@ const targets = [
     traits: ['Trusts his own technical judgement', 'Responds to fellow-IT framing', 'Accepts only mutual social contacts'],
     scenario: 'A technical request appears shortly before a scheduled board call and refers to an internal system issue that may affect senior staff. The message uses terminology familiar to the IT team and suggests that waiting could interrupt the meeting. Derek must decide whether the request fits normal internal practice while managing several other operational priorities.',
     transcript: 'Iris: Derek worked his way from helpdesk support to IT management over more than a decade. He is genuinely knowledgeable and often trusts his technical instincts because they have usually served him well. He still speaks informally with junior IT staff, but he is more guarded online and generally accepts professional connections only when a mutual contact makes them appear credible.',
-    strengths: { phishing: ['email', 'teams'] },
-    weaknesses: { social: ['linkedin', 'facebook', 'instagram'] },
+    vulnerabilities: { phishing: ['email', 'teams'] },
+    resistances: { social: ['linkedin', 'facebook', 'instagram'] },
     lockedMessage: 'Gain a successful foothold with Jordan or Priya to unlock Manager targets.',
   },
   {
@@ -42,8 +44,8 @@ const targets = [
     traits: ['Responds to empathy-based appeals', 'Verifies sensitive requests by phone', 'Trusted contact for staff problems'],
     scenario: 'HR receives a sensitive request concerning an employee who may need urgent support before an upcoming meeting. The situation sounds personal and time-sensitive, but acting on it could involve confidential staff information. Sarah must balance a quick, compassionate response with the verification procedures expected of her department.',
     transcript: 'Iris: Sarah moved into HR from a people-focused role and has become the manager employees approach when they are dealing with genuine problems. A previous near-miss led her to introduce phone-verification procedures for sensitive requests, and she follows that rule firmly. In most other situations, however, she is willing to be flexible when someone appears distressed or urgently needs help.',
-    strengths: { phishing: ['email', 'teams'], social: ['facebook', 'instagram'] },
-    weaknesses: { phishing: ['vishing'] },
+    vulnerabilities: { phishing: ['email', 'teams'], social: ['facebook', 'instagram'] },
+    resistances: { phishing: ['vishing'] },
     lockedMessage: 'Gain a successful foothold with Jordan or Priya to unlock Manager targets.',
   },
   {
@@ -52,8 +54,8 @@ const targets = [
     traits: ['High-profile speaker with public footage', 'Contact is filtered through an assistant', 'Requires strong prior intelligence'],
     scenario: 'A high-impact request is timed for a narrow gap between executive meetings and appears relevant to an upcoming company decision. Marcus normally receives information through his executive assistant, so unexpected direct contact is unusual. The request must look consistent with his schedule and established communication pathways before it receives attention.',
     transcript: 'Iris: Marcus is the public face of Solstice and is comfortable speaking at industry keynotes, recorded interviews and podcasts. Those appearances have created a large amount of publicly available audio and video, but reaching him directly remains difficult. Most requests are filtered through his executive assistant, and he has become accustomed to relying on that process rather than personally checking every new contact.',
-    strengths: { deepfake: ['voice', 'video'] },
-    weaknesses: { phishing: ['email', 'teams'], social: ['linkedin', 'facebook', 'instagram'] },
+    vulnerabilities: { deepfake: ['voice', 'video'] },
+    resistances: { phishing: ['email', 'teams'], social: ['linkedin', 'facebook', 'instagram'] },
     lockedMessage: 'Complete at least one successful Manager attempt to unlock the CEO.',
   },
 ]
@@ -70,51 +72,6 @@ const techniques = [
     { id: 'voice', label: 'Voice clone' }, { id: 'video', label: 'Video / image' },
   ] },
 ]
-
-const defenses = {
-  phishing: {
-    email: {
-      name: 'Secure Email Gateway',
-      description: 'Scans links and attachments, detects spoofed domains, and checks SPF, DKIM and DMARC before delivery.',
-    },
-    sms: {
-      name: 'Mobile Threat Defence',
-      description: 'Flags suspicious senders and malicious links in SMS messages before an employee can interact with them.',
-    },
-    vishing: {
-      name: 'Trusted Callback Verification',
-      description: 'Requires sensitive phone requests to be verified using a known number from the company directory.',
-    },
-    teams: {
-      name: 'Collaboration Security Gateway',
-      description: 'Marks external users, scans shared links and files, and restricts unexpected direct messages.',
-    },
-  },
-  social: {
-    facebook: {
-      name: 'Identity and Impersonation Monitoring',
-      description: 'Detects cloned profiles and requires staff to verify unexpected connection requests through a trusted channel.',
-    },
-    instagram: {
-      name: 'Social Impersonation Detection',
-      description: 'Monitors lookalike accounts and warns employees about unverified profiles using company or staff identities.',
-    },
-    linkedin: {
-      name: 'Professional Network Verification',
-      description: 'Checks mutual connections, profile history and identity signals before a work-related request is trusted.',
-    },
-  },
-  deepfake: {
-    voice: {
-      name: 'Voice Verification Protocol',
-      description: 'Uses challenge-response questions and a trusted callback before approving requests made by voice.',
-    },
-    video: {
-      name: 'Liveness and Media Provenance Check',
-      description: 'Checks liveness signals, media provenance and request context, then confirms the request through a second channel.',
-    },
-  },
-}
 
 const startingFunds = 5_000_000
 const formatMoney = (value) => new Intl.NumberFormat('en-AU', {
@@ -392,34 +349,36 @@ function Gameplay() {
     if (!selectedTechnique || targetLocked(selectedTarget) || roundLocked) return
     const subtype = subtypes[selectedTechnique]
     const selectedDefense = defenses[selectedTechnique][subtype]
-    const isStrong = selectedTarget.strengths[selectedTechnique]?.includes(subtype)
-    const isWeak = selectedTarget.weaknesses[selectedTechnique]?.includes(subtype)
+    const isStrong = selectedTarget.vulnerabilities[selectedTechnique]?.includes(subtype)
+    const isWeak = selectedTarget.resistances[selectedTechnique]?.includes(subtype)
     const nextRepeatCount = lastTargetId === selectedTarget.id ? repeatCount + 1 : 1
-    const tierMultiplier = selectedTarget.tier === 4 ? 1.45 : selectedTarget.tier === 3 ? 1.2 : 1
-    const fatigue = Math.max(0, nextRepeatCount - 1) * 3
-    const damage = Math.round((isStrong ? 560_000 : isWeak ? 70_000 : 230_000) * tierMultiplier)
-    const exposureGain = Math.min(40, Math.round((isStrong ? 8 : isWeak ? 22 : 14) * tierMultiplier + fatigue))
+
+    const traitMatch = isStrong ? 'positive' : isWeak ? 'negative' : 'neutral'
+    const intelLevel = traitMatch === 'positive'
+      ? successfulTargetIds.size >= 1 ? 'multiple' : 'relevant'
+      : successfulTargetIds.size >= 1 ? 'relevant' : 'none'
+
+    const turnResult = resolveTurn({
+      targetId: selectedTarget.id,
+      targetName: selectedTarget.name,
+      targetTier: selectedTarget.tierLabel.toLowerCase(),
+      technique: selectedTechnique,
+      subtype,
+      intelLevel,
+      traitMatch,
+      attemptNumber: nextRepeatCount,
+      alertLevel: exposure,
+      defense: selectedDefense,
+    })
 
     setDefenseSelection({
-      ...selectedDefense,
+      ...turnResult.defense,
       technique: techniques.find((item) => item.id === selectedTechnique)?.title,
       subtype: selectedOption.label,
       target: selectedTarget.name,
     })
 
-    setPendingResult({
-      outcome: isStrong ? 'Effective match' : isWeak ? 'High-risk mismatch' : 'Partial result',
-      damage, exposureGain, isStrong, isWeak, nextRepeatCount,
-      fatigue: nextRepeatCount > 1,
-      text: isStrong
-        ? `${selectedOption.label} aligned with ${selectedTarget.name}'s visible behaviour. The company selected ${selectedDefense.name}, but the well-matched approach bypassed the control and caused significant simulated impact.`
-        : isWeak
-          ? `${selectedOption.label} conflicted with ${selectedTarget.name}'s known safeguards. ${selectedDefense.name} reduced most of the impact and made the activity easier to detect.`
-          : `${selectedOption.label} had limited relevance to this target. ${selectedDefense.name} reduced the impact, leaving a weak risk-to-reward result.`,
-      defence: isStrong
-        ? `The correct control was selected, but no defence is perfect when a request closely matches an employee's role and behaviour. A trusted second-channel check is still essential.`
-        : `${selectedDefense.name} worked with the target's existing verification habits to reduce the simulated impact.`,
-    })
+    setPendingResult({ ...turnResult, nextRepeatCount })
   }
 
   const displayRoundResult = () => {
@@ -428,7 +387,7 @@ function Gameplay() {
     stopNarration()
 
     const nextFunds = Math.max(0, funds - pendingResult.damage)
-    const nextExposure = Math.min(100, exposure + pendingResult.exposureGain)
+    const nextExposure = Math.min(100, exposure + pendingResult.alertIncrease)
     const nextTurn = turn + 1
     const nextTechniqueCounts = {
       ...techniqueCounts,
@@ -441,9 +400,9 @@ function Gameplay() {
     setLastTargetId(selectedTarget.id)
     setRepeatCount(pendingResult.nextRepeatCount)
 
-    if (pendingResult.isStrong && selectedTarget.tier === 1) setEmployeeCleared(true)
-    if (pendingResult.isStrong && selectedTarget.tier === 3) setManagerCleared(true)
-    if (pendingResult.isStrong) {
+    if (pendingResult.success && selectedTarget.tier === 1) setEmployeeCleared(true)
+    if (pendingResult.success && selectedTarget.tier === 3) setManagerCleared(true)
+    if (pendingResult.success) {
       setSuccessfulTargetIds((current) => new Set(current).add(selectedTarget.id))
     }
 
@@ -459,7 +418,7 @@ function Gameplay() {
           fundsRemaining: nextFunds,
           fundsRemoved: startingFunds - nextFunds,
           exposure: nextExposure,
-          exposureGain: pendingResult.exposureGain,
+          exposureGain: pendingResult.alertIncrease,
           finalTarget: selectedTarget.name,
           technique: techniques.find((item) => item.id === selectedTechnique)?.title ?? 'Technique',
           subtype: selectedOption.label,
@@ -570,9 +529,9 @@ function Gameplay() {
               </div>
               <div className="transcript-box"><div className="transcript-heading"><span>TRANSCRIPT</span><span>{narrationState === 'unsupported' ? 'VOICE UNAVAILABLE' : narrationMuted ? 'NARRATION MUTED' : narrationState === 'playing' ? 'NARRATION PLAYING' : narrationState === 'paused' ? 'NARRATION PAUSED' : 'VISIBLE NARRATION'}</span></div><p>{selectedTarget.transcript}</p></div>
             </> : <div className="round-result" aria-live="polite">
-              <div className="result-topline"><div><span className="section-kicker">ROUND RESULT</span><h2>{result.outcome}</h2></div><span className={`result-badge ${result.isStrong ? 'effective' : result.isWeak ? 'risky' : 'partial'}`}>{result.isStrong ? '✓ EFFECTIVE' : result.isWeak ? '! HIGH EXPOSURE' : '• PARTIAL'}</span></div>
-              <div className="result-impact"><div><small>COMPANY DAMAGE</small><strong>−{formatMoney(result.damage)}</strong></div><div><small>EXPOSURE GAIN</small><strong>+{result.exposureGain}%</strong></div></div>
-              <p>{result.text}</p><div className="defence-note"><strong>DEFENSIVE LESSON</strong><span>{result.defence}</span></div>
+              <div className="result-topline"><div><span className="section-kicker">ROUND RESULT</span><h2>{result.dialogue.title}</h2></div><span className={`result-badge ${result.success ? 'effective' : 'risky'}`}>{result.success ? '✓ ATTACK SUCCESSFUL' : '! ATTACK BLOCKED'}</span></div>
+              <div className="result-impact"><div><small>COMPANY DAMAGE</small><strong>−{formatMoney(result.damage)}</strong></div><div><small>EXPOSURE GAIN</small><strong>+{result.alertIncrease}%</strong></div></div>
+              <p>{result.dialogue.line}</p><div className="defence-note"><strong>DEFENSIVE LESSON</strong><span>{result.dialogue.tag}</span></div>
               {result.fatigue && <div className="fatigue-warning">Repeated contact made {selectedTarget.name} more alert.</div>}
             </div>}
           </article>
@@ -637,9 +596,9 @@ function Gameplay() {
                 </div>
 
                 <div className="defense-result-action">
-                  <div className={`defense-outcome ${result ? result.isStrong ? 'bypassed' : 'held' : 'pending'}`}>
+                  <div className={`defense-outcome ${result ? result.success ? 'bypassed' : 'held' : 'pending'}`}>
                     <small>DEFENSE STATUS</small>
-                    <strong>{result ? result.isStrong ? 'DEFENSE BYPASSED' : result.isWeak ? 'DEFENSE HELD' : 'IMPACT REDUCED' : 'CONTROL DEPLOYED'}</strong>
+                    <strong>{result ? result.success ? 'DEFENSE BYPASSED' : 'DEFENSE HELD' : 'CONTROL DEPLOYED'}</strong>
                   </div>
                   {pendingResult && <button className="display-result-button" type="button" onClick={displayRoundResult}>DISPLAY ROUND RESULT <span>›</span></button>}
                   {result && <p className="defense-complete-note">Funds and exposure have now been updated.</p>}
