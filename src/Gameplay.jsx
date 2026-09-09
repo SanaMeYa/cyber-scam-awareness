@@ -9,6 +9,25 @@ import marcusPortrait from './assets/targets/marcus-reyes.jpg'
 import { defenses } from './gameLogic/defense/defenseConfig.js'
 import { resolveTurn } from './gameLogic/resolveTurn.js'
 
+const learningProgressSessionKey = 'breach-point:learning-progress:v1'
+
+function readSessionLearningProgress() {
+  try {
+    const storedProgress = JSON.parse(window.sessionStorage.getItem(learningProgressSessionKey) ?? '[]')
+    return Array.isArray(storedProgress) ? storedProgress : []
+  } catch {
+    return []
+  }
+}
+
+function saveSessionLearningProgress(moduleIds) {
+  try {
+    window.sessionStorage.setItem(learningProgressSessionKey, JSON.stringify(moduleIds))
+  } catch {
+    // The game remains usable when browser storage is unavailable.
+  }
+}
+
 const targets = [
   {
     id: 'jordan', name: 'Jordan Malik', initials: 'JM', role: 'Service Desk', tier: 1,
@@ -719,7 +738,7 @@ function Gameplay() {
   const [learningMenuOpen, setLearningMenuOpen] = useState(false)
   const [emailLessonOpen, setEmailLessonOpen] = useState(false)
   const [emailLessonMode, setEmailLessonMode] = useState('library')
-  const [emailLessonComplete, setEmailLessonComplete] = useState(false)
+  const [emailLessonComplete, setEmailLessonComplete] = useState(() => readSessionLearningProgress().includes('email'))
   const [emailLessonStep, setEmailLessonStep] = useState(0)
   const [emailCluesFound, setEmailCluesFound] = useState(() => new Set())
   const [emailComparisonAnswers, setEmailComparisonAnswers] = useState({})
@@ -731,14 +750,14 @@ function Gameplay() {
   const [emailAttackHintVisible, setEmailAttackHintVisible] = useState(false)
   const [smsLessonOpen, setSmsLessonOpen] = useState(false)
   const [smsLessonMode, setSmsLessonMode] = useState('library')
-  const [smsLessonComplete, setSmsLessonComplete] = useState(false)
+  const [smsLessonComplete, setSmsLessonComplete] = useState(() => readSessionLearningProgress().includes('sms'))
   const [smsLessonStep, setSmsLessonStep] = useState(0)
   const [smsCluesFound, setSmsCluesFound] = useState(() => new Set())
   const [smsManipulationAnswers, setSmsManipulationAnswers] = useState({})
   const [smsSafeRouteAnswers, setSmsSafeRouteAnswers] = useState({})
   const [vishingLessonOpen, setVishingLessonOpen] = useState(false)
   const [vishingLessonMode, setVishingLessonMode] = useState('library')
-  const [vishingLessonComplete, setVishingLessonComplete] = useState(false)
+  const [vishingLessonComplete, setVishingLessonComplete] = useState(() => readSessionLearningProgress().includes('vishing'))
   const [vishingLessonStep, setVishingLessonStep] = useState(0)
   const [vishingCallState, setVishingCallState] = useState('incoming')
   const [vishingCallsAnswered, setVishingCallsAnswered] = useState(() => new Set())
@@ -822,6 +841,16 @@ function Gameplay() {
     music.volume = (audioSettings.musicVolume / 100) * duckingMultiplier
     music.loop = audioSettings.loopMusic
   }, [audioSettings.duckDuringNarration, audioSettings.loopMusic, audioSettings.musicVolume, narrationState, vishingCallState])
+
+  useEffect(() => {
+    const completedModules = [
+      emailLessonComplete && 'email',
+      smsLessonComplete && 'sms',
+      vishingLessonComplete && 'vishing',
+    ].filter(Boolean)
+
+    saveSessionLearningProgress(completedModules)
+  }, [emailLessonComplete, smsLessonComplete, vishingLessonComplete])
 
   useEffect(() => {
     const handleButtonClick = (event) => {
@@ -1697,26 +1726,52 @@ function Gameplay() {
   const completedLearningModules = Object.values(learningModuleCompletion).filter(Boolean).length
   const availableLearningModules = learningModuleCatalog.filter((module) => module.available).length
 
-  const renderEmailJourneyInbox = (showPhishingEmail = false) => (
-    <div className={`journey-inbox outlook-inbox ${showPhishingEmail ? 'phishing-delivered' : 'delivery-preview'}`} aria-live="polite">
-      <div className="outlook-titlebar"><span className="outlook-app-launcher">▦</span><strong>Outlook</strong><div>⌕ Search mail and people</div><span>?</span><span>⚙</span><span className="outlook-user">JM</span></div>
-      <div className="outlook-commandbar"><button type="button" disabled>＋ New mail</button><span>⌫ Delete</span><span>▣ Archive</span><span>⚑ Report</span><span>⋯ More</span></div>
-      <div className="outlook-workspace">
-        <aside className="outlook-folders"><strong>FOLDERS</strong><span className="active">▣ Inbox {showPhishingEmail && <b>1</b>}</span><span>☆ Favourites</span><span>✈ Sent Items</span><span>▱ Drafts</span><span>⌫ Deleted</span><span>▤ Archive</span></aside>
+  const renderEmailJourneyInbox = (showPhishingEmail = false) => {
+    const phishingEmailOpen = showPhishingEmail && emailAttackInteractionOpened
+
+    return (
+      <div className={`journey-inbox outlook-inbox split-outlook ${showPhishingEmail ? 'phishing-delivered' : 'delivery-preview'}`} aria-live="polite">
         <section className="outlook-message-pane">
-          <header><div><h4>Inbox</h4><small>Focused&nbsp;&nbsp; Other</small></div><span>Filter⌄</span></header>
+          <header><div><h4>Inbox <span>★</span></h4></div><span>▣ {' '} ↓ {' '} ≡ {' '} ↕</span></header>
+          <div className="outlook-date-divider"><span>⌄</span><strong>Today</strong></div>
           <div className="journey-mail-list">
             {showPhishingEmail && (
-              <button className="journey-mail-row phishing unread phishing-arrival" type="button" onClick={openPhishingInboxMessage}><span>AS</span><div><strong>Apex Supplier Accounts</strong><small>Payment processing paused — AP-1048</small><p>Action required before today’s payment run</p></div><em>NOW<i>UNREAD</i></em></button>
+              <button className={`journey-mail-row phishing unread phishing-arrival ${phishingEmailOpen ? 'selected' : ''}`} type="button" onClick={openPhishingInboxMessage}>
+                <span>AS</span><div><strong>Apex Supplier Accounts</strong><small>Payment processing paused — AP-1048</small><p>Action required before today’s payment run</p></div><em>NOW<i>UNREAD</i></em>
+              </button>
             )}
             <div className="journey-mail-row"><span>SD</span><div><strong>Service Desk</strong><small>MFA enrolment completed</small><p>Your security registration was completed successfully.</p></div><em>9:08 AM</em></div>
-            <div className="journey-mail-row"><span>SL</span><div><strong>Sarah Lindqvist</strong><small>Updated leave schedule for review</small><p>Please check the attached team schedule before Friday.</p></div><em>10:41 AM</em></div>
-            <div className="journey-mail-row"><span>TC</span><div><strong>Team Calendar</strong><small>Product sync moved to Meeting Room 2</small><p>The room and video link have been updated.</p></div><em>11:26 AM</em></div>
+            <div className="journey-mail-row"><span>SL</span><div><strong>Sarah Lindqvist</strong><small>Updated leave schedule for review</small><p>Please check the team schedule before Friday.</p></div><em>8:41 AM</em></div>
+            <div className="outlook-date-divider mail-divider"><span>⌄</span><strong>Yesterday</strong></div>
+            <div className="journey-mail-row"><span>TC</span><div><strong>Team Calendar</strong><small>Product sync moved to Meeting Room 2</small><p>The room and video link have been updated.</p></div><em>4:26 PM</em></div>
+            <div className="journey-mail-row"><span>FM</span><div><strong>Facilities</strong><small>Level 3 kitchen maintenance</small><p>Maintenance is scheduled after 5:30 PM.</p></div><em>2:14 PM</em></div>
           </div>
         </section>
+
+        <section className={`outlook-reading-pane ${phishingEmailOpen ? 'message-selected' : ''}`} aria-label="Email reading pane">
+          {phishingEmailOpen ? (
+            <div className="journey-open-email realistic-phishing-email outlook-reading-email">
+              <div className="outlook-open-toolbar"><span>MESSAGE OPENED</span><span>↶ Reply {' '} ↠ Forward {' '} ⌫ Delete {' '} ⚑ Report</span></div>
+              <div className="external-sender-warning"><span>!</span>EXTERNAL SENDER — VERIFY LINKS AND REQUESTS</div>
+              <h4>Payment processing paused — Invoice AP-1048</h4>
+              <header><span>AS</span><div><strong>Apex Supplier Accounts</strong><small>accounts@apex-billing.example</small></div></header>
+              <div className="email-recipient-line">To: Jordan Malik &lt;jordan.malik@solstice.example&gt;</div>
+              <p>Hi Jordan,</p><p>Our updated invoice portal could not verify the details attached to AP-1048. The supplier payment is currently paused and may miss today’s processing window.</p>
+              <div className="invoice-summary"><span>INVOICE</span><strong>AP-1048</strong><small>STATUS: REVIEW REQUIRED BY 3:30 PM</small></div>
+              <p>Please use the secure review below. The previous accounts line cannot access this new portal, so replies may be delayed.</p>
+              <button className="simulated-email-link" type="button" onClick={openSimulatedSignIn}>REVIEW INVOICE DETAILS</button>
+              <em>Safe training message • Fictional addresses • No live link</em>
+            </div>
+          ) : (
+            <div className="outlook-empty-reading">
+              <div className="outlook-empty-envelope" aria-hidden="true"><span /></div>
+              <strong>Select an item to read</strong><small>Nothing is selected</small>
+            </div>
+          )}
+        </section>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <main className="game-page">
@@ -1731,7 +1786,7 @@ function Gameplay() {
           <div className="brand-lockup">
             <div className="game-brand" data-text="BREACH POINT">BREACH POINT</div>
             <div className="game-subtitle">SOCIAL ENGINEERING AWARENESS SIMULATION</div>
-            <div className="system-status-line"><span><i />SIMULATION ONLINE</span><span>LOCAL SESSION</span><span>NO DATA STORED</span></div>
+            <div className="system-status-line"><span><i />SIMULATION ONLINE</span><span>LOCAL SESSION</span><span>SESSION PROGRESS SAVED</span></div>
           </div>
           <div className="header-actions">
             <div className="learning-library" ref={learningMenuRef}>
@@ -1915,7 +1970,7 @@ function Gameplay() {
             <aside className="launch-panel">
               {!pendingResult && !result && selectedAttackLocked && <button className="launch-button training-unlock" type="button" onClick={() => openLearningModule(selectedRequiredModuleId)}>UNLOCK IN LEARNING <span>🔒</span></button>}
               {!pendingResult && !result && !selectedAttackLocked && <button className="launch-button" type="button" disabled={!selectedTechnique || targetLocked(selectedTarget)} onClick={launchSimulation}>LAUNCH SIMULATION <span>{selectedTechnique ? '▶' : '▣'}</span></button>}
-              {pendingResult && <button className="launch-button defense-locked" type="button" disabled>AI DEFENSE LOCKED <span>▣</span></button>}
+              {pendingResult && <button className="launch-button defense-locked" type="button" disabled>DEFENCE SYSTEM LOCKED <span>▣</span></button>}
               {result && <button className="launch-button next" type="button" onClick={nextRound}>NEXT ROUND <span>›</span></button>}
               <p>{result ? 'Review the educational result, then continue.' : pendingResult ? 'The company has selected its defensive response. Reveal the result below.' : selectedAttackLocked ? `Complete ${selectedRequiredModule?.title} in the Learning Library to unlock this attack.` : selectedTechnique ? `${techniques.find((item) => item.id === selectedTechnique)?.title}: ${selectedOption?.label}` : 'Select a target and choose a technique type to launch the simulation.'}</p>
             </aside>
@@ -1925,7 +1980,7 @@ function Gameplay() {
         <section className={`ai-defense-section glass-panel ${defenseSelection ? 'active' : ''}`} aria-live="polite">
           <div className="ai-defense-header">
             <div>
-              <div className="section-kicker">COMPANY AI DEFENSE</div>
+              <div className="section-kicker">COMPANY DEFENCE SYSTEM</div>
               <p>Automatically selects the company control that best matches the simulated attack.</p>
             </div>
             <span className={`ai-status ${result ? 'resolved' : defenseSelection ? 'locked' : ''}`}>
@@ -1935,8 +1990,8 @@ function Gameplay() {
 
           <div className="ai-defense-body">
             <div className="ai-core">
-              <div className="ai-core-icon"><span>AI</span></div>
-              <div><strong>AEGIS DEFENSE ENGINE</strong><small>Company controlled • User cannot modify</small></div>
+              <div className="ai-core-icon"><span>DS</span></div>
+              <div><strong>AEGIS DEFENCE SYSTEM</strong><small>Company controlled • User cannot modify</small></div>
             </div>
 
             {!defenseSelection ? (
@@ -1960,8 +2015,8 @@ function Gameplay() {
 
                 <div className="defense-result-action">
                   <div className={`defense-outcome ${result ? result.success ? 'bypassed' : 'held' : 'pending'}`}>
-                    <small>DEFENSE STATUS</small>
-                    <strong>{result ? result.success ? 'DEFENSE BYPASSED' : 'DEFENSE HELD' : 'CONTROL DEPLOYED'}</strong>
+                    <small>DEFENCE STATUS</small>
+                    <strong>{result ? result.success ? 'DEFENCE BYPASSED' : 'DEFENCE HELD' : 'CONTROL DEPLOYED'}</strong>
                   </div>
                   {pendingResult && <button className="display-result-button" type="button" onClick={displayRoundResult}>DISPLAY ROUND RESULT <span>›</span></button>}
                   {result && <p className="defense-complete-note">Funds and exposure have now been updated.</p>}
@@ -2169,7 +2224,7 @@ function Gameplay() {
                       })}
                     </div>
 
-                    <div className={`attack-journey-workspace ${emailAttackJourneyStage === 0 ? 'construction-mode' : ''} ${emailAttackJourneyStage === 4 ? 'account-impact-mode' : ''}`}>
+                    <div className={`attack-journey-workspace ${emailAttackJourneyStage === 0 ? 'construction-mode' : ''} ${emailAttackJourneyStage > 0 && emailAttackJourneyStage < 3 ? 'delivery-flow-mode' : ''} ${emailAttackJourneyStage === 4 ? 'account-impact-mode' : ''}`}>
                       {emailAttackJourneyStage === 0 && (
                         <article
                           className={`email-construction-lab ${emailAttackConstructing ? 'constructing' : ''} build-step-${emailAttackConstructionStep}`}
@@ -2226,10 +2281,11 @@ function Gameplay() {
                             </div>
                           </article>
 
-                          <div className={`attack-delivery-lane ${emailAttackSending || emailAttackJourneyStage >= 2 ? 'active' : ''} ${emailAttackJourneyStage >= 2 ? 'delivered' : ''}`}>
+                          <div className={`attack-delivery-lane ${emailAttackSending ? 'active' : ''} ${emailAttackJourneyStage >= 2 ? 'delivered' : ''}`}>
                             <span className="delivery-packet" aria-hidden="true">✉</span>
                             <i className="delivery-line" aria-hidden="true" />
                             <div className="gateway-node"><span>⌬</span><strong>EMAIL GATEWAY</strong><small>{emailAttackSending ? 'SCANNING MESSAGE' : emailAttackJourneyStage >= 2 ? 'DELIVERY ALLOWED' : 'AWAITING MESSAGE'}</small></div>
+                            <div className="delivery-route-labels" aria-hidden="true"><span>SENT</span><span>SCANNED</span><span>DELIVERED</span></div>
                             {(emailAttackSending || emailAttackJourneyStage >= 2) && <em>FILTERS REDUCE RISK, BUT DO NOT CATCH EVERY MESSAGE</em>}
                           </div>
 
@@ -2237,20 +2293,7 @@ function Gameplay() {
                             <header><span>SOLSTICE WORKSTATION</span><em>{emailAttackJourneyStage === 3 ? 'COPIED PAGE' : 'EMPLOYEE INBOX'}</em></header>
                             <div className="recipient-screen" key={`${emailAttackJourneyStage}-${emailAttackInteractionOpened}`}>
                               {emailAttackJourneyStage === 1 && renderEmailJourneyInbox(false)}
-                              {emailAttackJourneyStage === 2 && !emailAttackInteractionOpened && renderEmailJourneyInbox(true)}
-                              {emailAttackJourneyStage === 2 && emailAttackInteractionOpened && (
-                                <div className="journey-open-email realistic-phishing-email">
-                                  <div className="external-sender-warning"><span>!</span>EXTERNAL SENDER — VERIFY LINKS AND REQUESTS</div>
-                                  <header><span>AS</span><div><strong>Apex Supplier Accounts</strong><small>accounts@apex-billing.example</small></div></header>
-                                  <div className="email-recipient-line">To: Jordan Malik &lt;jordan.malik@solstice.example&gt;</div>
-                                  <h4>Payment processing paused — Invoice AP-1048</h4>
-                                  <p>Hi Jordan,</p><p>Our updated invoice portal could not verify the details attached to AP-1048. The supplier payment is currently paused and may miss today’s processing window.</p>
-                                  <div className="invoice-summary"><span>INVOICE</span><strong>AP-1048</strong><small>STATUS: REVIEW REQUIRED BY 3:30 PM</small></div>
-                                  <p>Please use the secure review below. The previous accounts line cannot access this new portal, so replies may be delayed.</p>
-                                  <button className="simulated-email-link" type="button" onClick={openSimulatedSignIn}>REVIEW INVOICE DETAILS</button>
-                                  <em>Safe training message • Fictional addresses • No live link</em>
-                                </div>
-                              )}
+                              {emailAttackJourneyStage === 2 && renderEmailJourneyInbox(true)}
                               {emailAttackJourneyStage === 3 && (
                                 <div className="journey-fake-login">
                                   <div className="fake-browser-bar"><i /><i /><i /><span>solstice-access.example/session</span></div>
