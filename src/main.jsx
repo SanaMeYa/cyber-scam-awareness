@@ -6,8 +6,6 @@ import Gameplay from './Gameplay.jsx'
 import GameOver from './pages/GameOver.jsx'
 import Home from './pages/Home.jsx'
 import HowToPlay from './pages/HowToPlay.jsx'
-import GameOver from './pages/GameOver.jsx'
-import Gameplay from './Gameplay.jsx'
 import Victory from './pages/Victory.jsx'
 
 createRoot(document.getElementById('root')).render(
