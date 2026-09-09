@@ -73,50 +73,579 @@ const techniques = [
   ] },
 ]
 
-const defenses = {
-  phishing: {
-    email: {
-      name: 'Secure Email Gateway',
-      description: 'Scans links and attachments, detects spoofed domains, and checks SPF, DKIM and DMARC before delivery.',
-    },
-    sms: {
-      name: 'Mobile Threat Defence',
-      description: 'Flags suspicious senders and malicious links in SMS messages before an employee can interact with them.',
-    },
-    vishing: {
-      name: 'Trusted Callback Verification',
-      description: 'Requires sensitive phone requests to be verified using a known number from the company directory.',
-    },
-    teams: {
-      name: 'Collaboration Security Gateway',
-      description: 'Marks external users, scans shared links and files, and restricts unexpected direct messages.',
-    },
-  },
-  social: {
-    facebook: {
-      name: 'Identity and Impersonation Monitoring',
-      description: 'Detects cloned profiles and requires staff to verify unexpected connection requests through a trusted channel.',
-    },
-    instagram: {
-      name: 'Social Impersonation Detection',
-      description: 'Monitors lookalike accounts and warns employees about unverified profiles using company or staff identities.',
-    },
-    linkedin: {
-      name: 'Professional Network Verification',
-      description: 'Checks mutual connections, profile history and identity signals before a work-related request is trusted.',
-    },
-  },
-  deepfake: {
-    voice: {
-      name: 'Voice Verification Protocol',
-      description: 'Uses challenge-response questions and a trusted callback before approving requests made by voice.',
-    },
-    video: {
-      name: 'Liveness and Media Provenance Check',
-      description: 'Checks liveness signals, media provenance and request context, then confirms the request through a second channel.',
-    },
-  },
+const attackTrainingRequirements = {
+  email: 'email',
+  sms: 'sms',
+  vishing: 'vishing',
 }
+
+const learningModuleCatalog = [
+  {
+    id: 'email', number: '01', category: 'PHISHING', theme: 'phishing', icon: '✉', title: 'Email Phishing',
+    description: 'Inspect realistic inbox messages, choose safer emails, and interactively trace how one phishing message can create company-wide damage.',
+    format: '4 interactive activities', available: true,
+  },
+  {
+    id: 'sms', number: '02', category: 'PHISHING', theme: 'phishing', icon: '▤', title: 'SMS Phishing',
+    description: 'Explore suspicious mobile messages, break manipulation tactics and practise choosing a safe response.',
+    format: '4 interactive activities', available: true,
+  },
+  {
+    id: 'vishing', number: '03', category: 'PHISHING', theme: 'phishing', icon: '☎', title: 'Vishing / Voice Call',
+    description: 'Listen to realistic calls, challenge the caller, build a safe callback and explore a branching conversation.',
+    format: '5 interactive activities', available: true,
+  },
+  {
+    id: 'teams', number: '04', category: 'PHISHING', theme: 'phishing', icon: '◫', title: 'Teams / Slack Phishing',
+    description: 'Learn how fraudulent direct messages, external accounts and malicious collaboration links imitate coworkers.',
+    format: 'Module in development', available: false,
+  },
+  {
+    id: 'facebook', number: '05', category: 'FAKE SOCIAL PROFILE', theme: 'social', icon: 'f', title: 'Facebook Impersonation',
+    description: 'Investigate cloned profiles, suspicious friend requests and attempts to move conversations off-platform.',
+    format: 'Module in development', available: false,
+  },
+  {
+    id: 'instagram', number: '06', category: 'FAKE SOCIAL PROFILE', theme: 'social', icon: '◎', title: 'Instagram Impersonation',
+    description: 'Recognise copied identities, deceptive direct messages and fake accounts built from public information.',
+    format: 'Module in development', available: false,
+  },
+  {
+    id: 'linkedin', number: '07', category: 'FAKE SOCIAL PROFILE', theme: 'social', icon: 'in', title: 'LinkedIn Impersonation',
+    description: 'Assess fabricated professional histories, suspicious mutual connections and false recruitment approaches.',
+    format: 'Module in development', available: false,
+  },
+  {
+    id: 'voice-clone', number: '08', category: 'DEEPFAKE', theme: 'deepfake', icon: '◖', title: 'Voice-Clone Deepfake',
+    description: 'Learn why a familiar voice is not proof of identity and practise independent verification techniques.',
+    format: 'Module in development', available: false,
+  },
+  {
+    id: 'video-deepfake', number: '09', category: 'DEEPFAKE', theme: 'deepfake', icon: '◉', title: 'Video / Image Deepfake',
+    description: 'Examine synthetic visual media, misleading context and safer ways to verify high-impact requests.',
+    format: 'Module in development', available: false,
+  },
+]
+
+const phishingInspectionExamples = [
+  {
+    id: 'account-alert',
+    layout: 'security-alert',
+    type: 'Account alert',
+    senderName: 'Solstice Identity Centre',
+    senderAddress: 'security@solstlce-access.example',
+    recipient: 'jordan.malik@solstice.example',
+    subject: 'Unusual Microsoft 365 sign-in requires review',
+    greeting: 'Hello valued user,',
+    message: 'Our automated monitoring recorded a sign-in to your work account from a new Windows device in Melbourne at 8:42 AM. If this was not you, your mailbox and shared files may be at risk.',
+    detail: 'Device: Windows 11 • Browser: Edge • Location: Melbourne, AU',
+    pressureText: 'Your access will be suspended in 30 minutes unless the activity is confirmed.',
+    actionText: 'REVIEW SIGN-IN',
+    clues: [
+      { id: 'account-sender', area: 'sender', title: 'Lookalike sender domain', explanation: 'The sender replaces a letter in “solstice”. Small spelling changes can imitate a trusted organisation.' },
+      { id: 'account-greeting', area: 'greeting', title: 'Generic greeting', explanation: 'An internal identity system would normally know the employee’s name. A generic greeting deserves closer inspection.' },
+      { id: 'account-pressure', area: 'deadline', title: 'Artificial deadline', explanation: 'The short deadline creates panic and discourages the recipient from checking through the official account portal.' },
+      { id: 'account-action', area: 'action', title: 'Unexpected sign-in link', explanation: 'Account alerts should be checked by opening the known service directly, not by following an unexpected email link.' },
+    ],
+  },
+  {
+    id: 'invoice-change',
+    layout: 'invoice-thread',
+    type: 'Payment redirection',
+    senderName: 'Leah Warren — Apex Office Supplies',
+    senderAddress: 'leah.warren@apex-supplies.example',
+    replyTo: 'apex.accounts@payment-mail.example',
+    recipient: 'accounts@solstice.example',
+    subject: 'RE: Invoice AP-1048 — remittance details',
+    greeting: 'Hi Accounts Team,',
+    message: 'Thanks for confirming that invoice AP-1048 is scheduled for this afternoon. We recently moved our receivables account to a new banking provider, so the details shown on last month’s invoice are no longer current.',
+    bankNotice: 'Please replace the saved beneficiary with the account in “AP-1048-Revised.pdf” before releasing the $48,750 payment.',
+    verificationText: 'Our finance phone line is being migrated today, so please reply to this email instead of calling your usual Apex contact.',
+    attachmentName: 'AP-1048-Revised.pdf',
+    clues: [
+      { id: 'invoice-reply-to', area: 'replyto', title: 'Different reply-to address', explanation: 'The visible sender and reply-to domains do not match. Replies would be redirected to a different mailbox.' },
+      { id: 'invoice-bank-change', area: 'bankchange', title: 'Unexpected bank-detail change', explanation: 'A sudden change to beneficiary details is a major business email compromise warning sign.' },
+      { id: 'invoice-verification', area: 'verify', title: 'Normal verification discouraged', explanation: 'The message gives a reason not to call the known supplier contact. Payment changes should be verified independently.' },
+      { id: 'invoice-attachment', area: 'attachment', title: 'Unverified revised invoice', explanation: 'The attachment supports a sensitive payment change. Verify the request before opening or acting on the document.' },
+    ],
+  },
+  {
+    id: 'shared-document',
+    layout: 'file-share',
+    type: 'Fake file share',
+    senderName: 'CloudDesk Documents',
+    senderAddress: 'shares@clouddesk-access.example',
+    recipient: 'priya.nandakumar@solstice.example',
+    subject: 'Jordan Malik shared a protected document with you',
+    greeting: 'You have been invited to review a file',
+    message: 'Jordan Malik added you as an editor and left two comments. Sign in with your work account to view the document and respond.',
+    fileName: 'Confidential_Salary_Review_Q4.docx',
+    fileMeta: 'Protected document • 2 comments • Editor access',
+    pressureText: 'For security, this invitation expires today at 5:00 PM and cannot be restored.',
+    actionText: 'OPEN SHARED DOCUMENT',
+    clues: [
+      { id: 'share-sender', area: 'sender', title: 'Unfamiliar sharing service', explanation: 'The organisation does not normally use this service. Unexpected platforms should be checked before signing in.' },
+      { id: 'share-file', area: 'file', title: 'Unexpected sensitive file', explanation: 'The highly sensitive filename is designed to trigger curiosity, but the recipient was not expecting this document.' },
+      { id: 'share-pressure', area: 'expiry', title: 'Unusual expiry pressure', explanation: 'The expiry warning encourages quick action before the recipient checks whether the invitation is genuine.' },
+      { id: 'share-action', area: 'action', title: 'Login requested through email', explanation: 'The safer approach is to open the organisation’s approved document platform directly and check for the file there.' },
+    ],
+  },
+  {
+    id: 'executive-request',
+    layout: 'plain-executive',
+    type: 'Executive impersonation',
+    senderName: 'Marcus Reyes — CEO',
+    senderAddress: 'marcus.reyes.executive@fastmail-request.example',
+    recipient: 'sarah.lindqvist@solstice.example',
+    subject: 'Confidential request before the client meeting',
+    greeting: 'Sarah, are you available for a quick confidential task?',
+    message: 'I am about to join the Northstar client meeting and need four $250 digital gift cards for the guests. Purchase them using the department card and send me clear images of the codes by reply.',
+    pressureText: 'Please keep this between us until the client announcement is made.',
+    contactRestriction: 'I cannot take calls or Teams messages while the client is in the room. Reply here as soon as the purchase is complete.',
+    signature: 'Marcus • Sent from mobile',
+    clues: [
+      { id: 'executive-sender', area: 'sender', title: 'Personal external address', explanation: 'A senior leader making a company request from an unfamiliar external account should be verified through an approved channel.' },
+      { id: 'executive-secrecy', area: 'secrecy', title: 'Request for secrecy', explanation: 'Secrecy isolates the recipient from colleagues who might question or verify the unusual request.' },
+      { id: 'executive-payment', area: 'payment', title: 'Unusual gift-card payment', explanation: 'Requests for gift cards or codes are inconsistent with normal company purchasing and approval processes.' },
+      { id: 'executive-contact', area: 'contact', title: 'Verification is blocked', explanation: 'The sender claims other contact methods are unavailable, removing the normal verification step.' },
+    ],
+  },
+]
+
+const emailComparisonExamples = [
+  {
+    id: 'password-reset',
+    title: 'Password reset notice',
+    prompt: 'Select the safer email.',
+    correct: 'a',
+    explanation: 'Email A directs staff to the normal internal portal and does not request credentials through an email link.',
+    emails: {
+      a: { sender: 'IT Service Desk <support@solstice.example>', to: 'Jordan Malik', sent: '9:16 AM', subject: 'Service request SD-2841 — password reset completed', body: ['The password reset you requested by phone has been completed under ticket SD-2841.', 'Open the usual staff portal from your saved bookmark and choose “Set new password”. If you did not request this change, call the service desk using the number in the staff directory.'], detail: 'Internal sender • Expected ticket • No embedded login link' },
+      b: { sender: 'Microsoft Security Desk <security@solstice-helpdesk.example>', to: 'Undisclosed recipients', sent: '9:14 AM', subject: 'URGENT: Password expires today — final notice', body: ['We were unable to validate your company password during today’s security synchronisation.', 'Use the account verification button within 20 minutes and enter your current password to prevent permanent mailbox suspension.'], detail: 'External sender • Generic delivery • Unexpected credential link' },
+    },
+  },
+  {
+    id: 'supplier-payment',
+    title: 'Supplier payment update',
+    prompt: 'Select the safer email.',
+    correct: 'b',
+    explanation: 'Email B asks the recipient to verify the change using the supplier contact already held by the company.',
+    emails: {
+      a: { sender: 'Apex Billing <accounts@apex-newbank.example>', to: 'Solstice Accounts', sent: '1:42 PM', subject: 'RE: AP-1048 — new beneficiary required today', body: ['Our receivables account changed during a banking migration. Please replace the beneficiary before releasing the $48,750 payment this afternoon.', 'The old accounts telephone line is unavailable, so confirm completion by replying to this message. Revised instructions are attached.'], detail: 'New domain • Bank-detail change • Verification discouraged' },
+      b: { sender: 'Apex Billing <accounts@apex.example>', to: 'Solstice Accounts', sent: '10:05 AM', subject: 'Notice: planned billing-system maintenance', body: ['Our invoice layout will change from 1 October as part of scheduled maintenance. Existing bank and contact details remain unchanged.', 'If a future message requests a payment change, contact Leah using the supplier number already held in your finance system before updating any record.'], detail: 'Known sender • No payment change • Independent verification encouraged' },
+    },
+  },
+  {
+    id: 'document-share',
+    title: 'Shared project document',
+    prompt: 'Select the safer email.',
+    correct: 'a',
+    explanation: 'Email A provides expected project context and directs the recipient to the organisation’s normal workspace without asking them to sign in through the message.',
+    emails: {
+      a: { sender: 'Projects Team <projects@solstice.example>', to: 'Orion project group', sent: '3:28 PM', subject: 'Orion workshop notes published in staff workspace', body: ['The approved notes and action register from today’s Orion workshop are now available in the existing project folder.', 'Open the normal staff workspace from your saved bookmark, then select Projects → Orion → Workshops. Contact Maya in Teams if your access is missing.'], detail: 'Expected project • Known workspace • Trusted support contact' },
+      b: { sender: 'Secure Documents <notify@document-review.example>', to: 'you', sent: '3:31 PM', subject: 'Private document waiting — access expires in one hour', body: ['A confidential employee document has been shared with your work account. The sender has requested an immediate review.', 'Sign in through the secure document page using your company email and password before this protected invitation expires.'], detail: 'Unknown service • No project context • Work credential request' },
+    },
+  },
+  {
+    id: 'executive-task',
+    title: 'Executive request',
+    prompt: 'Select the safer email.',
+    correct: 'b',
+    explanation: 'Email B follows a normal approval process and gives the recipient a trusted way to confirm the request.',
+    emails: {
+      a: { sender: 'Marcus Reyes <ceo.private@quickrequest.example>', to: 'Sarah Lindqvist', sent: '4:03 PM', subject: 'Keep this client request confidential', body: ['I am in a board meeting and cannot take calls. Purchase four digital gift cards for the Northstar guests before 4:30 PM.', 'Send the card numbers and PINs by reply. Do not involve Finance because the client announcement is still confidential.'], detail: 'External account • Secrecy • Urgent unusual payment' },
+      b: { sender: 'Executive Office <executive.office@solstice.example>', to: 'Sarah Lindqvist', sent: '11:20 AM', subject: 'Client-event purchase request PR-228 submitted', body: ['Procurement request PR-228 has been submitted for the Northstar client event and is awaiting Finance approval.', 'Review it inside the approved procurement system. For questions, call the executive assistant using the staff directory and quote PR-228.'], detail: 'Internal workflow • Traceable request • Independent verification' },
+    },
+  },
+]
+
+const emailAttackJourneyStages = [
+  {
+    id: 'impersonation', icon: '◇', label: 'IMPERSONATION', title: 'A believable identity is imitated',
+    description: 'Watch a safe fictional message take shape. Familiar branding, a lookalike sender, urgency and a disguised sign-in path are combined to make the email feel believable.',
+    defence: 'Checking the complete sender address and confirming the request with the known supplier can stop the chain here.',
+  },
+  {
+    id: 'delivery', icon: '✉', label: 'DELIVERY', title: 'The email reaches the company gateway',
+    description: 'Automated controls inspect the sender, links and message reputation. Some suspicious emails are blocked, but a new or carefully disguised message may still reach an inbox.',
+    defence: 'Secure email gateways reduce risk, but reporting controls and employee awareness remain necessary because filters are not perfect.',
+  },
+  {
+    id: 'interaction', icon: '◉', label: 'INTERACTION', title: 'The employee trusts the business context',
+    description: 'The message refers to a believable invoice problem and creates urgency. The employee opens it because the request resembles normal work rather than an obvious scam.',
+    defence: 'Pausing to inspect the domain, unexpected deadline and verification method can prevent interaction.',
+  },
+  {
+    id: 'capture', icon: '▣', label: 'FAKE SIGN-IN', title: 'A copied sign-in page requests information',
+    description: 'The simulated link opens a visual copy of a familiar sign-in screen. Any details entered would be sent to the scammer instead of the genuine service.',
+    defence: 'Open the known service from a saved bookmark or company portal rather than signing in through an unexpected email link.',
+  },
+  {
+    id: 'account', icon: '⌁', label: 'ACCOUNT MISUSE', title: 'One compromised account can affect several company systems',
+    description: 'The connected diagram shows how access to email, shared files and finance conversations can create further phishing, recovery work, disruption and possible financial loss.',
+    defence: 'Phishing-resistant MFA, rapid password resets, session revocation, payment verification and prompt reporting can contain the incident.',
+  },
+]
+
+const smsWarningExamples = [
+  {
+    id: 'parcel-redelivery', layout: 'ios', type: 'Parcel redelivery', sender: 'MetroPost Delivery', senderMeta: 'Unknown mobile • +61 4 18 440 291', time: '9:12 AM', headerArea: 'sender',
+    bubbles: [
+      { text: 'MetroPost: We attempted to deliver parcel MP-482901 this morning. No authorised recipient was available.' },
+      { text: 'A redelivery fee of $2.15 is required before the item can be scheduled again.', area: 'fee' },
+      { text: 'Complete this before 10:00 AM or the parcel will be returned to the distribution centre.', area: 'deadline' },
+      { text: 'Track and reschedule: metropost-redelivery.example/MP482901', area: 'link', kind: 'link' },
+    ],
+    clues: [
+      { id: 'sms-parcel-sender', area: 'sender', title: 'Unexpected mobile number', explanation: 'The message claims to be an organisation but arrives from an unfamiliar mobile number.' },
+      { id: 'sms-parcel-fee', area: 'fee', title: 'Small unexpected payment', explanation: 'A small fee can feel harmless while still leading to a fake payment page that requests card details.' },
+      { id: 'sms-parcel-deadline', area: 'deadline', title: 'Artificial deadline', explanation: 'The short deadline pressures the recipient to act before checking whether a delivery is expected.' },
+      { id: 'sms-parcel-link', area: 'link', title: 'Unverified tracking address', explanation: 'The address should not be trusted because it came from an unexpected message. Open the courier’s official app or site independently.' },
+    ],
+  },
+  {
+    id: 'bank-alert', layout: 'bank-thread', type: 'Bank impersonation', sender: 'Harbour Bank', senderMeta: 'Sender name shown • identity not guaranteed', time: '2:36 PM', headerArea: 'thread',
+    priorMessage: 'Your one-time code for your requested login is 418 920. Never share this code with anyone.',
+    bubbles: [
+      { text: 'SECURITY ALERT: A $1,280 transfer to A. Patel is pending from your account.', area: 'fear' },
+      { text: 'If this was not you, call our new security line immediately on 07 5550 0188.', area: 'callback' },
+      { text: 'Keep your latest verification code ready so the fraud officer can cancel the transfer.', area: 'code' },
+    ],
+    clues: [
+      { id: 'sms-bank-thread', area: 'thread', title: 'A familiar thread is not proof', explanation: 'Scam messages can sometimes appear under a familiar sender name or in an existing conversation.' },
+      { id: 'sms-bank-fear', area: 'fear', title: 'Fear-driven financial alert', explanation: 'The large pending transfer creates fear and encourages an immediate response.' },
+      { id: 'sms-bank-callback', area: 'callback', title: 'Number supplied by the message', explanation: 'Calling the supplied number keeps the recipient inside the unverified contact path. Use the number on the bank card or official app.' },
+      { id: 'sms-bank-code', area: 'code', title: 'Request involving a security code', explanation: 'Passwords and one-time codes should never be shared with someone who contacts you unexpectedly.' },
+    ],
+  },
+  {
+    id: 'toll-notice', layout: 'android', type: 'Unpaid toll notice', sender: '+61 4 93 772 014', senderMeta: 'Not saved in contacts', time: '7:48 AM', headerArea: 'source',
+    bubbles: [
+      { text: 'RoadLink notice: Toll RL-774190 for vehicle 742-XQZ remains unpaid.', area: 'plate' },
+      { text: 'Outstanding balance: $6.80. A $45 administration charge will be added after 6:00 PM today.', area: 'penalty' },
+      { text: 'Avoid enforcement action. Review the notice at roadlink-toll-check.example/pay', area: 'link', kind: 'link' },
+    ],
+    clues: [
+      { id: 'sms-toll-source', area: 'source', title: 'Unrecognised sender', explanation: 'The text comes from an ordinary mobile number rather than a verified communication channel.' },
+      { id: 'sms-toll-plate', area: 'plate', title: 'Personal-looking detail', explanation: 'A reference or registration number can make a message feel credible, but familiar details alone do not prove who sent it.' },
+      { id: 'sms-toll-penalty', area: 'penalty', title: 'Rapid penalty escalation', explanation: 'The threat of a much larger fee creates urgency that may stop the recipient from checking independently.' },
+      { id: 'sms-toll-link', area: 'link', title: 'Lookalike payment link', explanation: 'Do not pay through an unexpected text link. Check for outstanding tolls through the provider’s independently located website or app.' },
+    ],
+  },
+  {
+    id: 'work-mfa', layout: 'work-chat', type: 'Work account verification', sender: 'Solstice IT Support', senderMeta: 'External SMS • +61 4 72 301 884', time: '4:21 PM', headerArea: 'external',
+    bubbles: [
+      { text: 'Hi Jordan, this is Daniel from Solstice IT. We are fixing an authentication outage affecting the service desk.', area: 'context' },
+      { text: 'Approve the next authenticator prompt so we can synchronise your account before your shift ends.', area: 'approval' },
+      { text: 'If the prompt fails, reply here with the six-digit code displayed in your app.', area: 'code' },
+      { text: 'Please do not create another support ticket because it may interrupt the repair.', area: 'bypass' },
+    ],
+    clues: [
+      { id: 'sms-work-external', area: 'external', title: 'IT request from an external number', explanation: 'An unexpected support request should be checked through the organisation’s known service-desk channel.' },
+      { id: 'sms-work-context', area: 'context', title: 'Believable workplace context', explanation: 'Using the employee’s name, role and a plausible outage makes the message feel relevant, but those details may be known publicly.' },
+      { id: 'sms-work-approval', area: 'approval', title: 'Unexpected approval request', explanation: 'Never approve an authentication prompt you did not initiate. It may authorise someone else’s login.' },
+      { id: 'sms-work-code', area: 'code', title: 'One-time code requested', explanation: 'Legitimate support staff should not ask an employee to send a one-time authentication code.' },
+      { id: 'sms-work-bypass', area: 'bypass', title: 'Normal reporting discouraged', explanation: 'The message attempts to prevent the recipient from using the official ticketing process where the request could be verified.' },
+    ],
+  },
+  {
+    id: 'reward-credit', layout: 'reward', type: 'Unexpected reward', sender: 'BrightGrid Rewards', senderMeta: 'Promotional sender ID • not previously contacted', time: '11:07 AM', headerArea: 'sender',
+    bubbles: [
+      { text: 'Congratulations! Your organisation’s mobile account has been selected for a $320 service credit.', area: 'reward' },
+      { text: 'To confirm eligibility, provide the account holder’s name and billing postcode on the claim page.', area: 'details' },
+      { text: 'Only 40 credits remain. Your allocation expires at midday if it is not activated.', area: 'scarcity' },
+      { text: 'Activate credit: brightgrid-bonus.example/business', area: 'link', kind: 'link' },
+    ],
+    clues: [
+      { id: 'sms-reward-sender', area: 'sender', title: 'Unexpected promotional sender', explanation: 'A branded sender label can look official, but it does not prove the organisation sent the message.' },
+      { id: 'sms-reward-offer', area: 'reward', title: 'Unexpected reward', explanation: 'An unsolicited credit is designed to create excitement and make the recipient less cautious.' },
+      { id: 'sms-reward-details', area: 'details', title: 'Business information requested', explanation: 'The claim asks for account details that could help someone impersonate the organisation later.' },
+      { id: 'sms-reward-scarcity', area: 'scarcity', title: 'Artificial scarcity', explanation: 'A limited quantity and short expiry pressure the recipient to claim before checking the offer.' },
+      { id: 'sms-reward-link', area: 'link', title: 'Unverified claim link', explanation: 'Check genuine account rewards through the provider’s official app or independently located website instead.' },
+    ],
+  },
+]
+
+const smsManipulationExamples = [
+  { id: 'manipulation-urgency', label: 'Parcel expires', message: 'Pay the $2.15 redelivery fee in the next 20 minutes or your parcel will be returned.', correct: 'urgency', explanation: 'The short deadline is designed to reduce careful checking and push an immediate response.' },
+  { id: 'manipulation-fear', label: 'Account threatened', message: 'Your bank account is being emptied. Call our security line now or you will be responsible for the loss.', correct: 'fear', explanation: 'The message creates fear of financial loss so the recipient reacts before verifying the alert.' },
+  { id: 'manipulation-authority', label: 'Executive request', message: 'This is the CEO. Approve the authentication prompt now so I can access the board presentation.', correct: 'authority', explanation: 'The sender claims senior authority to make the recipient feel they should comply without questioning the request.' },
+  { id: 'manipulation-reward', label: 'Unexpected reward', message: 'Your business number has been selected for a $500 technology rebate. Claim it before today’s allocation closes.', correct: 'reward', explanation: 'An unexpected reward creates excitement and curiosity, making the link feel more tempting.' },
+  { id: 'manipulation-payroll', label: 'Payroll instruction', message: 'Payroll Manager: Complete the new salary verification form before your shift ends. This instruction has executive approval.', correct: 'authority', explanation: 'The message borrows authority from a senior role and claimed executive approval to discourage questions.' },
+  { id: 'manipulation-credit', label: 'Loyalty credit', message: 'Good news—your company account qualifies for a surprise $320 service credit. Only a few allocations remain.', correct: 'reward', explanation: 'The promised credit combines reward and curiosity so the recipient focuses on claiming it rather than verifying it.' },
+]
+
+const manipulationChoices = [
+  { id: 'urgency', icon: '◷', title: 'URGENCY', description: 'Act before time runs out' },
+  { id: 'fear', icon: '!', title: 'FEAR', description: 'Prevent a threatened loss' },
+  { id: 'authority', icon: '◆', title: 'AUTHORITY', description: 'Obey someone important' },
+  { id: 'reward', icon: '★', title: 'REWARD / CURIOSITY', description: 'Gain something unexpected' },
+]
+
+const smsSafeRouteExamples = [
+  {
+    id: 'route-delivery', title: 'Unexpected delivery notice', situation: 'You receive a parcel-fee text, but you are unsure whether anyone ordered a delivery.', companyImpact: 'A fake payment page could expose company card details and create investigation and replacement costs.', correct: 4,
+    sender: 'MetroPost Delivery', time: '9:12 AM', messages: [
+      { text: 'We attempted delivery of parcel MP-482901. No authorised recipient was available.' },
+      { text: 'Pay the $2.15 redelivery fee before 10:00 AM: metropost-redelivery.example/MP482901', kind: 'link' },
+    ],
+    options: [
+      'Match the parcel number to a purchase record, then use the SMS link if it appears familiar',
+      'Inspect the visible address carefully and open it only if the spelling appears correct',
+      'Reply with the company address and ask the sender to confirm the intended recipient',
+      'Search the courier name and call the first customer-service result that appears',
+      'Open the courier’s known app or independently typed official website and enter the tracking number there',
+      'Forward the message to Facilities and ask them to arrange the redelivery through the link',
+    ],
+    success: 'Correct. Leaving the SMS and checking through an independently accessed service breaks the untrusted path.',
+  },
+  {
+    id: 'route-bank', title: 'Bank transfer warning', situation: 'A text reports an unfamiliar transfer and supplies a number for the “fraud team”.', companyImpact: 'Following the supplied contact path could expose verification codes or lead to unauthorised transfers.', correct: 2,
+    sender: 'Harbour Bank', time: '2:36 PM', messages: [
+      { text: 'SECURITY ALERT: A $1,280 transfer to A. Patel is pending.' },
+      { text: 'Not you? Call our new security line on 07 5550 0188 and keep your verification code ready.', kind: 'alert' },
+    ],
+    options: [
+      'Call the fraud number in the text but avoid mentioning any verification codes',
+      'Reply that the transfer is unauthorised so the bank has a written record',
+      'Open the known banking app or call the number printed on the company bank card and check the transaction there',
+      'Search the supplied phone number online and call it if no scam warnings appear',
+      'Wait for a second bank message before deciding whether the alert is genuine',
+      'Ask another employee whether they received the same alert before responding',
+    ],
+    success: 'Correct. A known app or independently sourced number verifies the alert without relying on information in the SMS.',
+  },
+  {
+    id: 'route-work', title: 'Unexpected authentication prompt', situation: 'Someone claiming to be IT asks you by SMS to approve a login prompt and avoid creating a ticket.', companyImpact: 'Approving the prompt could allow unauthorised account access, disruption and recovery work.', correct: 5,
+    sender: 'Solstice IT Support', time: '4:21 PM', messages: [
+      { text: 'Hi Jordan, IT is fixing today’s authentication outage.' },
+      { text: 'Approve the next authenticator prompt. Do not create another support ticket while we repair your account.', kind: 'alert' },
+    ],
+    options: [
+      'Approve the prompt, then review the login location shown in the authenticator app',
+      'Reply and ask the sender to provide the internal incident or ticket number',
+      'Check whether an outage was announced and approve the prompt if one exists',
+      'Let the prompt expire without responding and continue working as normal',
+      'Send a screenshot of the prompt but hide most of the verification code',
+      'Deny the prompt and contact the service desk through the official directory or support portal',
+    ],
+    success: 'Correct. Denying an unrequested prompt and reporting it through the normal support channel protects the account.',
+  },
+  {
+    id: 'route-after-click', title: 'You already entered information', situation: 'You used an SMS link and submitted a work password before noticing the address looked unusual.', companyImpact: 'Fast reporting can reduce account misuse, investigation time and wider business disruption.', correct: 3,
+    sender: 'CloudDesk Documents', time: '10:44 AM', messages: [
+      { text: 'A protected document is waiting. Sign in before the invitation expires: clouddesk-access.example/view', kind: 'link' },
+      { text: 'You opened the page and entered your work password.', direction: 'event' },
+    ],
+    options: [
+      'Delete the text and monitor the account for unusual activity before reporting anything',
+      'Change the password through the genuine portal but do not report it unless the account is misused',
+      'Turn off the phone’s connection and wait until the next workday to speak to someone',
+      'Contact the security team immediately through an official channel and follow its account-recovery process',
+      'Call the support number from the SMS and ask whether the page recorded the password',
+      'Open the page again and enter the password once more to confirm whether the first submission worked',
+    ],
+    success: 'Correct. Prompt reporting lets the organisation secure access and investigate before the incident spreads.',
+  },
+]
+
+const vishingCallExamples = [
+  {
+    id: 'vishing-toll', device: 'ios', time: '9:41', caller: 'RoadLink Accounts', initials: 'RL', number: 'Unknown mobile number', isScam: true,
+    transcript: 'Hi, RoadLink accounts here. It looks like you have an unpaid toll from yesterday, and it rolls into a late fee tonight. I can sort it out now—just read me the card number you want to use.',
+    explanation: 'This personal call is a scam. It combines an unexpected debt, a short deadline, and a request for card information. Check your toll account through the provider’s known app or website instead.',
+    signal: 'Unexpected payment and card request',
+  },
+  {
+    id: 'vishing-bank', device: 'android', time: '11:08', caller: 'Harbour Bank Security', initials: 'HB', number: 'Caller ID: HARBOUR BANK', isScam: true,
+    transcript: 'Hi, it’s Aaron from Harbour Bank security. I’m looking at a two-thousand-dollar transfer from the business account. If that wasn’t you, no worries—I can stop it, but I need the six-digit code that just came through.',
+    explanation: 'This is a scam. Caller ID can be spoofed, and a bank should not ask for a one-time security code. End the call and use the number on the company bank card.',
+    signal: 'Fear plus a one-time-code request',
+  },
+  {
+    id: 'vishing-courier', device: 'pixel', time: '1:24', caller: 'MetroPost Deliveries', initials: 'MP', number: 'Saved contact • MetroPost', isScam: false,
+    transcript: 'Hey, it’s Elena from MetroPost returning your call about tomorrow’s parcel delivery. I don’t need any payment details—just update the delivery window in the MetroPost app whenever you’re free.',
+    explanation: 'This personal call is legitimate. It follows an expected request, asks for no secret information or payment, and directs the recipient to an independently opened app they already use.',
+    signal: 'Expected context and no sensitive request',
+  },
+  {
+    id: 'vishing-it', device: 'samsung', time: '2:52', caller: 'Solstice IT Service Desk', initials: 'IT', number: '+61 4 18 330 274', isScam: true,
+    transcript: 'Hey Jordan, it’s Sam from IT. We’re fixing today’s sign-in issue and your mailbox is still disconnected. When the next approval pops up, tap Accept for me, and don’t open another ticket because it’ll slow things down.',
+    explanation: 'This is a scam. The caller requests an unexpected authentication approval and discourages the official ticketing process. Deny the prompt and contact the real service desk.',
+    signal: 'Authentication approval and process bypass',
+  },
+  {
+    id: 'vishing-card', device: 'office', time: '3:17', caller: 'Harbour Bank Business', initials: 'HB', number: 'Scheduled callback • Case HB-2047', isScam: false,
+    transcript: 'Hi, Maya here from Harbour Bank. I’m returning your scheduled call about the replacement company card. I won’t ask you for any passwords or codes—when you’re ready, call the number printed on the card and quote case HB-2047.',
+    explanation: 'This is a legitimate callback. It matches an expected case, requests no secrets, and actively moves verification to a number the employee already trusts.',
+    signal: 'Scheduled contact and independent callback',
+  },
+  {
+    id: 'vishing-supplier', device: 'fold', time: '4:36', caller: 'Apex Supplier Accounts', initials: 'AP', number: 'Private number', isScam: true,
+    transcript: 'Hi, it’s Ben from Apex accounts. Your payment bounced because we changed banks this morning. Could you swap the beneficiary details before five? The old accounts number is disconnected, so please don’t call it.',
+    explanation: 'This is a scam. A sudden bank change, deadline, and instruction not to use the known supplier number are strong payment-redirection warning signs.',
+    signal: 'Bank-detail change and blocked verification',
+  },
+]
+
+const vishingResponseExamples = [
+  {
+    id: 'vishing-response-it',
+    identity: 'Internal IT technician', context: 'An unscheduled call during a company-wide login problem',
+    caller: 'Hey Jordan, Daniel here from infrastructure. Your mailbox keeps dropping out, so I’ve started a remote repair under the outage ticket. A Microsoft code should’ve just come through—can you read it back so I can reconnect the account?',
+    prompt: 'Which response protects the account without ignoring a possible outage?',
+    correct: 2,
+    options: [
+      'Ask the caller to state the code first so you can compare it',
+      'Share only the final three digits to limit the risk',
+      'Refuse to share the code, end the call, and contact IT through the official directory',
+      'Keep the caller talking while another employee checks the number online',
+    ],
+    explanation: 'Authentication codes are secrets. End the unverified call and contact the real service desk using a trusted source.',
+  },
+  {
+    id: 'vishing-response-bank',
+    identity: 'Bank fraud investigator', context: 'Caller ID displays the company bank’s name',
+    caller: 'Hi, I’m calling from Harbour Bank’s corporate fraud team. We’ve paused a new supplier payment for forty-eight thousand dollars. I can stop it leaving today, but I’ll need the company card number and the approval code sent to the finance phone.',
+    prompt: 'How should the employee verify the claimed payment alert?',
+    correct: 1,
+    options: [
+      'Confirm the cardholder name but not the card number',
+      'End the call and use the number printed on the company card or the known banking app',
+      'Ask for the caller’s employee number and continue if they provide one',
+      'Transfer the caller to a manager so they can decide',
+    ],
+    explanation: 'Do not verify a financial alert through the caller who delivered it. Use a known banking channel instead.',
+  },
+  {
+    id: 'vishing-response-executive',
+    identity: 'Executive assistant', context: 'The caller knows the CEO’s current meeting schedule',
+    caller: 'Hi, it’s Claire from Marcus’s office. He’s already in the Northstar meeting and says the supplier deposit was missed. Can you release it before the client notices? Keep it within the project team for now—the announcement’s still confidential.',
+    prompt: 'What response breaks the authority and secrecy pressure?',
+    correct: 3,
+    options: [
+      'Ask the caller to repeat the CEO’s full name and role',
+      'Release a smaller payment while waiting for written confirmation',
+      'Request an email from the caller while remaining on the line',
+      'Pause the request and verify it through the approved payment-authorisation process',
+    ],
+    explanation: 'Authority and secrecy never replace normal approval controls. Use the established payment process and trusted contacts.',
+  },
+  {
+    id: 'vishing-response-support',
+    identity: 'Software support engineer', context: 'The caller quotes a genuine product name and employee role',
+    caller: 'Hey, I can see the service desk is flat out, so I opened a priority repair directly with the vendor. Don’t create another internal ticket—two engineers changing the account could mess up the recovery. Just stay on the call and I’ll walk you through the settings.',
+    prompt: 'What is the strongest warning sign in this request?',
+    correct: 0,
+    options: [
+      'The caller is trying to keep you away from the official verification path',
+      'The issue is too urgent for the normal support process',
+      'The caller probably has limited access to the ticketing system',
+      'You should wait until the repair window finishes before reporting it',
+    ],
+    explanation: 'A request to avoid normal reporting is a warning sign. Genuine staff should support independent verification.',
+  },
+]
+
+const vishingCallbackActions = [
+  { id: 'source', icon: '⌕', title: 'FIND A TRUSTED CONTACT', description: 'Use the staff directory, known app, card, or official website.' },
+  { id: 'report', icon: '⚑', title: 'REPORT THE ATTEMPT', description: 'Give security staff the time, claimed identity, and request.' },
+  { id: 'end', icon: '✕', title: 'END THE UNVERIFIED CALL', description: 'Do not remain under the caller’s pressure.' },
+  { id: 'callback', icon: '☎', title: 'CALL BACK INDEPENDENTLY', description: 'Start a new call using the trusted number you found.' },
+]
+
+const correctVishingCallbackSequence = ['end', 'source', 'callback', 'report']
+
+const vishingConversationStages = [
+  {
+    id: 'conversation-alert',
+    caller: 'Hi, this is Mia from Harbour Bank security. We’ve got a $2,400 transfer sitting on the company account, and I just need to check I’m speaking with the authorised cardholder.',
+    options: [
+      { type: 'safe', text: 'Hmm, I’m gonna hang up and check the banking app myself.', reply: 'You can, but if you disconnect now the transfer might go through before you reach anyone.' },
+      { type: 'risky', text: 'Yeah, I manage the card. What do you need from me?', reply: 'Great, thanks. Just grab the card and read me the number so I can open the fraud case.' },
+      { type: 'uncertain', text: 'Wait, what transfer? How come it needs me to approve anything?', reply: 'I understand it’s confusing, but the cancellation window is already counting down.' },
+    ],
+  },
+  {
+    id: 'conversation-card',
+    caller: 'The payment’s marked as urgent. I only need the company card number to pull up the right account and block it for you.',
+    options: [
+      { type: 'safe', text: 'Nah, I’m not giving card details on an incoming call, mate. I’ll ring the bank myself.', reply: 'That’s your choice, but the normal number may put you in a queue while the transfer completes.' },
+      { type: 'risky', text: 'OK, I’ve got the card here. I’ll read the number out now.', reply: 'Perfect, that matches. Next, I’ll need the security code to approve the cancellation.' },
+      { type: 'uncertain', text: 'I mean, I can give you the last four digits. Is that enough?', reply: 'The full number would be quicker, but yes, the last four might let me get started.' },
+    ],
+  },
+  {
+    id: 'conversation-code',
+    caller: 'You should have a six-digit security code on the finance phone now. Read that out and I can reverse the payment straight away.',
+    options: [
+      { type: 'safe', text: 'What? No, those codes are private. I’m ending this call and reporting it.', reply: 'Please don’t hang up—the transfer is about to leave and a report won’t stop it in time.' },
+      { type: 'risky', text: 'Right, the code is 418920. Can you cancel it now?', reply: 'Got it. I’m processing that, but the account needs one more security check.' },
+      { type: 'uncertain', text: 'Well, I got the code, but how do I know you actually work for the bank?', reply: 'Fair question. My staff reference is HB-7714, but that code will expire while we keep checking.' },
+    ],
+  },
+  {
+    id: 'conversation-app',
+    caller: 'Your banking app should be showing an approval request now. Tap Approve and I can attach the cancellation to your account.',
+    options: [
+      { type: 'safe', text: 'Nope, I didn’t start that. I’m denying it and calling the bank through the app.', reply: 'If you deny it, you could remove the protection I’ve already placed on the transfer.' },
+      { type: 'risky', text: 'OK, I see the prompt. I’ve approved it—what now?', reply: 'Thanks, approval received. Keep the app open while I secure the online account.' },
+      { type: 'uncertain', text: 'OK, but like, what does that approval actually give you?', reply: 'It only connects the cancellation, but it expires soon, so I need you to decide now.' },
+    ],
+  },
+  {
+    id: 'conversation-software',
+    caller: 'I’m still seeing another device interfering with the account. I’ll send you our support tool—install it and I can remove the device remotely.',
+    options: [
+      { type: 'safe', text: 'Yeah, no. I’m not installing anything from some random call. Our security team can handle it.', reply: 'I’m trying to help, but your team may not even see the transfer until tomorrow’s reconciliation.' },
+      { type: 'risky', text: 'Righto, send the link and just talk me through what I need to press.', reply: 'It’s on the way. When it opens, allow every permission so the secure session works.' },
+      { type: 'uncertain', text: 'Can’t I just search for the support app myself instead of using your link?', reply: 'Not for this case. Only the version in my message connects to the fraud record.' },
+    ],
+  },
+  {
+    id: 'conversation-final',
+    caller: 'This is the last chance to stop the transfer. I need you to stay with me and finish the security process now.',
+    options: [
+      { type: 'safe', text: 'No, I’m done. I’m hanging up, locking the account properly, and reporting this call.', reply: 'The caller disconnects once the employee refuses to continue through the unverified process.' },
+      { type: 'risky', text: 'OK, fine. Just tell me what else you need and let’s finish this.', reply: 'The caller continues using the information and access gathered during the conversation.' },
+      { type: 'uncertain', text: 'I don’t know… give me another minute. I’m still not sure about this.', reply: 'The caller stays on the line and keeps applying pressure while the account remains at risk.' },
+    ],
+  },
+]
+
+const vishingConversationOptionOrders = [
+  [2, 0, 1],
+  [1, 2, 0],
+  [2, 1, 0],
+  [0, 2, 1],
+  [1, 0, 2],
+  [2, 0, 1],
+]
+
+const vishingTakeCallAudio = {
+  'vishing-toll': '/audio/vishing/take-the-call/vishing-toll.mp3',
+  'vishing-bank': '/audio/vishing/take-the-call/vishing-bank.mp3',
+  'vishing-courier': '/audio/vishing/take-the-call/vishing-courier.mp3',
+  'vishing-it': '/audio/vishing/take-the-call/vishing-it.mp3',
+  'vishing-card': '/audio/vishing/take-the-call/vishing-card.mp3',
+  'vishing-supplier': '/audio/vishing/take-the-call/vishing-supplier.mp3',
+}
+
+const vishingChallengeAudio = {
+  'vishing-response-it': '/audio/vishing/challenge-the-caller/vishing-response-it.mp3',
+  'vishing-response-bank': '/audio/vishing/challenge-the-caller/vishing-response-bank.mp3',
+  'vishing-response-executive': '/audio/vishing/challenge-the-caller/vishing-response-executive.mp3',
+  'vishing-response-support': '/audio/vishing/challenge-the-caller/vishing-response-support.mp3',
+}
+
+const getVishingConversationAudio = (stageIndex, role, branchType = '') => {
+  const stageNumber = String(stageIndex + 1).padStart(2, '0')
+  const branchSuffix = branchType ? `_${branchType}` : ''
+  return `/audio/vishing/what-would-happen/wwh_s${stageNumber}_${role}${branchSuffix}.mp3`
+}
+
+const totalPhishingClues = phishingInspectionExamples.reduce((total, example) => total + example.clues.length, 0)
+const totalSmsClues = smsWarningExamples.reduce((total, example) => total + example.clues.length, 0)
 
 const startingFunds = 5_000_000
 const formatMoney = (value) => new Intl.NumberFormat('en-AU', {
@@ -226,12 +755,12 @@ function Gameplay() {
   const [funds, setFunds] = useState(startingFunds)
   const [exposure, setExposure] = useState(0)
   const [turn, setTurn] = useState(0)
-  const [techniqueCounts, setTechniqueCounts] = useState({ phishing: 0, social: 0, deepfake: 0 })
   const [employeeCleared, setEmployeeCleared] = useState(false)
   const [managerCleared, setManagerCleared] = useState(false)
   const [successfulTargetIds, setSuccessfulTargetIds] = useState(() => new Set())
   const [lastTargetId, setLastTargetId] = useState(null)
   const [repeatCount, setRepeatCount] = useState(0)
+  const [techniqueCounts, setTechniqueCounts] = useState({ phishing: 0, social: 0, deepfake: 0 })
   const [result, setResult] = useState(null)
   const [pendingResult, setPendingResult] = useState(null)
   const [defenseSelection, setDefenseSelection] = useState(null)
@@ -717,9 +1246,9 @@ function Gameplay() {
     stopNarration()
     setSelectedTargetId('jordan'); setSelectedTechnique(''); setFunds(startingFunds)
     setExposure(0); setTurn(0); setEmployeeCleared(false); setManagerCleared(false)
-    setTechniqueCounts({ phishing: 0, social: 0, deepfake: 0 })
     setSuccessfulTargetIds(new Set())
     setLastTargetId(null); setRepeatCount(0); setResult(null)
+    setTechniqueCounts({ phishing: 0, social: 0, deepfake: 0 })
     setPendingResult(null); setDefenseSelection(null)
     setLearningMenuOpen(false)
     if (emailLessonComplete) setEmailLessonOpen(false)
