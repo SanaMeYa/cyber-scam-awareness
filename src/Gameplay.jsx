@@ -1429,20 +1429,19 @@ function Gameplay() {
     setResult(pendingResult)
     setPendingResult(null)
 
-    const allTargetsCompleted = nextSuccessfulTargetIds.size === targets.length
+    const ceoTakedown = pendingResult.success && selectedTarget.id === 'marcus'
+    const won = nextFunds <= 0 || ceoTakedown
 
-    if (nextExposure >= 100 || allTargetsCompleted) {
-      navigate('/game-over', {
+    if (won || nextExposure >= 100) {
+      navigate(won ? '/victory' : '/game-over', {
         state: {
-          reason: nextExposure >= 100 ? 'detected' : 'completed',
+          reason: !won ? 'detected' : ceoTakedown ? 'ceo' : 'bankrupt',
           turnsPlayed: nextTurn,
           startingFunds,
           fundsRemaining: nextFunds,
           fundsRemoved: startingFunds - nextFunds,
           exposure: nextExposure,
-          exposureGain: pendingResult.alertIncrease,
-          targetsCompleted: nextSuccessfulTargetIds.size,
-          totalTargets: targets.length,
+          exposureGain: pendingResult.exposureGain,
           finalTarget: selectedTarget.name,
           technique: techniques.find((item) => item.id === selectedTechnique)?.title ?? 'Technique',
           subtype: selectedOption.label,
