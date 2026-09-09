@@ -287,6 +287,7 @@ select:focus-visible { box-shadow: 0 0 0 2px rgba(0, 214, 255, .35); }
 .defence-note { margin-top: auto; padding: 8px 10px; display: grid; grid-template-columns: 120px 1fr; gap: 12px; border-left: 3px solid var(--cyan); background: rgba(0, 113, 159, .14); font-size: .62rem; line-height: 1.4; }
 .defence-note strong { color: var(--cyan); font-size: .58rem; letter-spacing: .05em; }
 .fatigue-warning { margin-top: 6px; padding: 5px 8px; color: #ffd174; border: 1px solid rgba(238,161,37,.45); font-size: .58rem; }
+.match-warning { margin-top: 6px; padding: 6px 8px; color: #ffd174; background: rgba(199,141,52,.08); border: 1px solid rgba(238,161,37,.45); border-radius: 4px; font-size: .58rem; line-height: 1.45; }
 
 .ai-defense-section {
   min-height: 162px;

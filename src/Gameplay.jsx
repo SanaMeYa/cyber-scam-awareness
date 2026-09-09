@@ -34,9 +34,9 @@ const targets = [
     traits: ['Trusts his own technical judgement', 'Responds to fellow-IT framing', 'Accepts only mutual social contacts'],
     scenario: 'A technical request appears shortly before a scheduled board call and refers to an internal system issue that may affect senior staff. The message uses terminology familiar to the IT team and suggests that waiting could interrupt the meeting. Derek must decide whether the request fits normal internal practice while managing several other operational priorities.',
     transcript: 'Iris: Derek worked his way from helpdesk support to IT management over more than a decade. He is genuinely knowledgeable and often trusts his technical instincts because they have usually served him well. He still speaks informally with junior IT staff, but he is more guarded online and generally accepts professional connections only when a mutual contact makes them appear credible.',
-    vulnerabilities: { phishing: ['email', 'teams'] },
+    vulnerabilities: { phishing: ['teams'] },
     resistances: { social: ['linkedin', 'facebook', 'instagram'] },
-    lockedMessage: 'Gain a successful foothold with Jordan or Priya to unlock Manager targets.',
+    lockedMessage: 'Complete an effective attack against Jordan or Priya to unlock Manager targets.',
   },
   {
     id: 'sarah', name: 'Sarah Lindqvist', initials: 'SL', role: 'HR Manager', tier: 3,
@@ -44,9 +44,9 @@ const targets = [
     traits: ['Responds to empathy-based appeals', 'Verifies sensitive requests by phone', 'Trusted contact for staff problems'],
     scenario: 'HR receives a sensitive request concerning an employee who may need urgent support before an upcoming meeting. The situation sounds personal and time-sensitive, but acting on it could involve confidential staff information. Sarah must balance a quick, compassionate response with the verification procedures expected of her department.',
     transcript: 'Iris: Sarah moved into HR from a people-focused role and has become the manager employees approach when they are dealing with genuine problems. A previous near-miss led her to introduce phone-verification procedures for sensitive requests, and she follows that rule firmly. In most other situations, however, she is willing to be flexible when someone appears distressed or urgently needs help.',
-    vulnerabilities: { phishing: ['email', 'teams'], social: ['facebook', 'instagram'] },
+    vulnerabilities: { phishing: ['email'], social: ['facebook'] },
     resistances: { phishing: ['vishing'] },
-    lockedMessage: 'Gain a successful foothold with Jordan or Priya to unlock Manager targets.',
+    lockedMessage: 'Complete an effective attack against Jordan or Priya to unlock Manager targets.',
   },
   {
     id: 'marcus', name: 'Marcus Reyes', initials: 'MR', role: 'CEO', tier: 4,
@@ -56,7 +56,7 @@ const targets = [
     transcript: 'Iris: Marcus is the public face of Solstice and is comfortable speaking at industry keynotes, recorded interviews and podcasts. Those appearances have created a large amount of publicly available audio and video, but reaching him directly remains difficult. Most requests are filtered through his executive assistant, and he has become accustomed to relying on that process rather than personally checking every new contact.',
     vulnerabilities: { deepfake: ['voice', 'video'] },
     resistances: { phishing: ['email', 'teams'], social: ['linkedin', 'facebook', 'instagram'] },
-    lockedMessage: 'Complete at least one successful Manager attempt to unlock the CEO.',
+    lockedMessage: 'Complete an effective attack against a Manager to unlock the CEO.',
   },
 ]
 
@@ -758,8 +758,7 @@ function Gameplay() {
   const [employeeCleared, setEmployeeCleared] = useState(false)
   const [managerCleared, setManagerCleared] = useState(false)
   const [successfulTargetIds, setSuccessfulTargetIds] = useState(() => new Set())
-  const [lastTargetId, setLastTargetId] = useState(null)
-  const [repeatCount, setRepeatCount] = useState(0)
+  const [targetAttemptCounts, setTargetAttemptCounts] = useState({})
   const [techniqueCounts, setTechniqueCounts] = useState({ phishing: 0, social: 0, deepfake: 0 })
   const [result, setResult] = useState(null)
   const [pendingResult, setPendingResult] = useState(null)
@@ -1247,7 +1246,7 @@ function Gameplay() {
     setSelectedTargetId('jordan'); setSelectedTechnique(''); setFunds(startingFunds)
     setExposure(0); setTurn(0); setEmployeeCleared(false); setManagerCleared(false)
     setSuccessfulTargetIds(new Set())
-    setLastTargetId(null); setRepeatCount(0); setResult(null)
+    setTargetAttemptCounts({}); setResult(null)
     setTechniqueCounts({ phishing: 0, social: 0, deepfake: 0 })
     setPendingResult(null); setDefenseSelection(null)
     setLearningMenuOpen(false)
@@ -1328,7 +1327,7 @@ function Gameplay() {
     const selectedDefense = defenses[selectedTechnique][subtype]
     const isStrong = selectedTarget.vulnerabilities[selectedTechnique]?.includes(subtype)
     const isWeak = selectedTarget.resistances[selectedTechnique]?.includes(subtype)
-    const nextRepeatCount = lastTargetId === selectedTarget.id ? repeatCount + 1 : 1
+    const nextRepeatCount = (targetAttemptCounts[selectedTarget.id] ?? 0) + 1
 
     const traitMatch = isStrong ? 'positive' : isWeak ? 'negative' : 'neutral'
     const intelLevel = traitMatch === 'positive'
@@ -1355,7 +1354,14 @@ function Gameplay() {
       target: selectedTarget.name,
     })
 
-    setPendingResult({ ...turnResult, nextRepeatCount })
+    setPendingResult({
+      ...turnResult,
+      traitMatch,
+      effectiveMatch: isStrong,
+      resistedMatch: isWeak,
+      targetCompleted: turnResult.success && isStrong,
+      nextRepeatCount,
+    })
   }
 
   const launchSimulation = () => {
@@ -1379,28 +1385,35 @@ function Gameplay() {
     setFunds(nextFunds)
     setExposure(nextExposure)
     setTechniqueCounts(nextTechniqueCounts)
-    setLastTargetId(selectedTarget.id)
-    setRepeatCount(pendingResult.nextRepeatCount)
+    setTargetAttemptCounts((current) => ({
+      ...current,
+      [selectedTarget.id]: pendingResult.nextRepeatCount,
+    }))
 
-    if (pendingResult.success && selectedTarget.tier === 1) setEmployeeCleared(true)
-    if (pendingResult.success && selectedTarget.tier === 3) setManagerCleared(true)
-    if (pendingResult.success) {
-      setSuccessfulTargetIds((current) => new Set(current).add(selectedTarget.id))
-    }
+    const nextSuccessfulTargetIds = new Set(successfulTargetIds)
+    if (pendingResult.targetCompleted) nextSuccessfulTargetIds.add(selectedTarget.id)
+
+    if (pendingResult.targetCompleted && selectedTarget.tier === 1) setEmployeeCleared(true)
+    if (pendingResult.targetCompleted && selectedTarget.tier === 3) setManagerCleared(true)
+    setSuccessfulTargetIds(nextSuccessfulTargetIds)
 
     setResult(pendingResult)
     setPendingResult(null)
 
-    if (nextExposure >= 100 || nextFunds <= 0) {
+    const allTargetsCompleted = nextSuccessfulTargetIds.size === targets.length
+
+    if (nextExposure >= 100 || allTargetsCompleted) {
       navigate('/game-over', {
         state: {
-          reason: nextExposure >= 100 ? 'detected' : 'bankrupt',
+          reason: nextExposure >= 100 ? 'detected' : 'completed',
           turnsPlayed: nextTurn,
           startingFunds,
           fundsRemaining: nextFunds,
           fundsRemoved: startingFunds - nextFunds,
           exposure: nextExposure,
           exposureGain: pendingResult.alertIncrease,
+          targetsCompleted: nextSuccessfulTargetIds.size,
+          totalTargets: targets.length,
           finalTarget: selectedTarget.name,
           technique: techniques.find((item) => item.id === selectedTechnique)?.title ?? 'Technique',
           subtype: selectedOption.label,
@@ -1857,9 +1870,18 @@ function Gameplay() {
               </div>
               <div className="transcript-box"><div className="transcript-heading"><span>TRANSCRIPT</span><span>{narrationState === 'unsupported' ? 'VOICE UNAVAILABLE' : narrationMuted ? 'NARRATION MUTED' : narrationState === 'playing' ? 'NARRATION PLAYING' : narrationState === 'paused' ? 'NARRATION PAUSED' : 'VISIBLE NARRATION'}</span></div><p>{selectedTarget.transcript}</p></div>
             </> : <div className="round-result" aria-live="polite">
-              <div className="result-topline"><div><span className="section-kicker">ROUND RESULT</span><h2>{result.dialogue.title}</h2></div><span className={`result-badge ${result.success ? 'effective' : 'risky'}`}>{result.success ? '✓ ATTACK SUCCESSFUL' : '! ATTACK BLOCKED'}</span></div>
+              <div className="result-topline">
+                <div>
+                  <span className="section-kicker">ROUND RESULT</span>
+                  <h2>{result.targetCompleted ? 'Effective Attack' : result.success ? 'Limited Impact' : 'Attack Blocked'}</h2>
+                </div>
+                <span className={`result-badge ${result.targetCompleted ? 'effective' : result.success ? 'partial' : 'risky'}`}>
+                  {result.targetCompleted ? '✓ TARGET COMPLETED' : result.success ? '• TARGET REMAINS ACTIVE' : '! ATTACK BLOCKED'}
+                </span>
+              </div>
               <div className="result-impact"><div><small>COMPANY DAMAGE</small><strong>−{formatMoney(result.damage)}</strong></div><div><small>EXPOSURE GAIN</small><strong>+{result.alertIncrease}%</strong></div></div>
               <p>{result.dialogue.line}</p><div className="defence-note"><strong>DEFENSIVE LESSON</strong><span>{result.dialogue.tag}</span></div>
+              {result.success && !result.targetCompleted && <div className="match-warning">This attempt caused limited simulated damage, but it did not match {selectedTarget.name}&apos;s vulnerabilities. The target remains active.</div>}
               {result.fatigue && <div className="fatigue-warning">Repeated contact made {selectedTarget.name} more alert.</div>}
             </div>}
           </article>
