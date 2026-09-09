@@ -6,6 +6,7 @@ import Home from './pages/Home.jsx'
 import HowToPlay from './pages/HowToPlay.jsx'
 import GameOver from './pages/GameOver.jsx'
 import Gameplay from './Gameplay.jsx'
+import Victory from './pages/Victory.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -15,6 +16,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/how-to-play" element={<HowToPlay />} />
         <Route path="/gameplay" element={<Gameplay />} />
         <Route path="/game-over" element={<GameOver />} />
+        <Route path="/victory" element={<Victory />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
