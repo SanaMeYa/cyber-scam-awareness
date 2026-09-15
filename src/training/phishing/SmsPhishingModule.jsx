@@ -1,60 +1,263 @@
-import { useMemo, useState } from 'react'
-import ModuleShell from '../ModuleShell.jsx'
+import { useEffect, useRef, useState } from 'react'
+import { manipulationChoices, smsManipulationExamples, smsSafeRouteExamples, smsWarningExamples, totalSmsClues } from './smsData.js'
 
-const warningMessages = [
-  { id: 'parcel', device: 'ios', sender: 'MetroPost Delivery', meta: 'Unknown mobile • +61 418 440 291', messages: ['We attempted delivery of parcel MP-482901.', 'Pay the $2.15 redelivery fee before 10:00 AM.', 'metropost-redelivery.example/MP482901'], clues: { meta: 'An organisation contacting you from an unfamiliar mobile number deserves scrutiny.', 1: 'A small fee can lead to a fake payment page that steals card details.', 2: 'The unexpected address should not be trusted. Open the courier app independently.' } },
-  { id: 'bank', device: 'android', sender: 'Harbour Bank', meta: 'Sender name shown • identity not guaranteed', messages: ['$1,280 transfer to A. Patel is pending.', 'Call our new security line: 07 5550 0188.', 'Keep your verification code ready for the fraud officer.'], clues: { meta: 'Caller and sender names can be spoofed.', 0: 'Fear about a large transfer is used to create urgency.', 2: 'A bank should never ask for a one-time security code.' } },
-  { id: 'reward', device: 'pixel', sender: 'Rewards Centre', meta: 'Today 1:18 PM • Unknown sender', messages: ['Congrats! Your number won a $750 shopping reward.', 'Only 3 claims remain. Confirm your details now.', 'reward-claim-now.example/winner'], clues: { meta: 'An unexpected prize from an unknown sender has no trusted context.', 1: 'Scarcity is used to stop you thinking carefully.', 2: 'The claim link uses an unrelated, unverified domain.' } },
-  { id: 'it', device: 'samsung', sender: 'Solstice IT Support', meta: 'External SMS • not a service-desk channel', messages: ['Hi Jordan, we are repairing today’s sign-in outage.', 'Approve the next authenticator prompt.', 'Do not create another ticket—it will slow the repair.'], clues: { meta: 'Internal support should use approved company channels.', 1: 'Approving an unexpected prompt can give an attacker access.', 2: 'Discouraging the official process prevents verification.' } },
-  { id: 'tax', device: 'compact', sender: 'Revenue Refund', meta: 'Unknown sender • 6:44 PM', messages: ['Your $436.20 tax refund could not be deposited.', 'Update your bank details before midnight.', 'revenue-refund-au.example/secure'], clues: { meta: 'The contact was not expected and arrives outside normal context.', 0: 'An unexpected refund uses excitement to lower caution.', 2: 'Government services should be opened through their known portal, not an SMS link.' } },
-]
+export default function SmsPhishingModule({ completed, onComplete, onClose }) {
+  const smsLessonOpen = true
+  const smsLessonMode = 'library'
+  const [smsLessonStep, setSmsLessonStep] = useState(0)
+  const [smsCluesFound, setSmsCluesFound] = useState(() => new Set())
+  const [smsManipulationAnswers, setSmsManipulationAnswers] = useState({})
+  const [smsSafeRouteAnswers, setSmsSafeRouteAnswers] = useState({})
+  const smsLessonContentRef = useRef(null)
 
-const manipulationCases = [
-  { id: 'urgency', text: 'Act in 15 minutes or your company mailbox will be permanently disabled.', correct: 'urgency', options: ['Urgency', 'Authority', 'Curiosity', 'Social proof'], explanation: 'A forced deadline reduces the time available to verify the request.' },
-  { id: 'authority', text: 'CEO Marcus asked me to contact you. Keep this confidential and buy the cards now.', correct: 'authority', options: ['Reward', 'Authority', 'Convenience', 'Familiarity'], explanation: 'The message borrows senior authority and adds secrecy to discourage questions.' },
-  { id: 'fear', text: 'A $2,400 transfer is leaving your account. Call immediately with your security code.', correct: 'fear', options: ['Fear', 'Friendship', 'Curiosity', 'Routine'], explanation: 'A frightening financial event pushes the recipient toward the attacker’s contact path.' },
-  { id: 'reward', text: 'You have won a $750 reward. Only three claims remain—verify your card to collect it.', correct: 'reward', options: ['Authority', 'Fear', 'Reward', 'Helpfulness'], explanation: 'An unexpected reward combines excitement with scarcity and a sensitive request.' },
-]
+  useEffect(() => {
+    if (!smsLessonOpen || smsLessonMode === 'required') return undefined
 
-const safeResponseCases = [
-  { id: 'delivery', sender: 'MetroPost', messages: ['Parcel MP-482901 could not be delivered.', 'Pay $2.15 before 10:00 AM: metropost-redelivery.example'], correct: 4, options: ['Compare the visible spelling, then open the link if it looks correct', 'Reply with the company address and request proof', 'Forward the SMS to Facilities and ask them to pay', 'Search the courier and call the first result', 'Open the known courier app or type its official site yourself', 'Wait for another message before checking'], explanation: 'Leaving the SMS and checking an independently opened service breaks the untrusted path.' },
-  { id: 'bank', sender: 'Harbour Bank', messages: ['$1,280 transfer pending.', 'Call 07 5550 0188 and keep your code ready.'], correct: 2, options: ['Call the supplied number but refuse to share the code', 'Reply that the transfer is unauthorised', 'Use the known banking app or number printed on the card', 'Search the supplied number and trust it if no warning appears', 'Wait for a second alert', 'Ask a colleague if they received the same text'], explanation: 'Verify the alert without relying on any contact detail supplied by the suspicious message.' },
-  { id: 'it', sender: 'Solstice IT', messages: ['Approve the next authentication prompt.', 'Do not create another support ticket.'], correct: 5, options: ['Approve it, then inspect the location', 'Ask the sender for a ticket number by SMS', 'Approve only if an outage was announced', 'Ignore it and continue working', 'Send a screenshot with the code covered', 'Deny it and contact IT through the official portal'], explanation: 'An unrequested authentication prompt should be denied and reported through the normal channel.' },
-  { id: 'clicked', sender: 'CloudDesk', messages: ['Protected document: clouddesk-access.example', 'You already entered your work password.'], correct: 3, options: ['Delete the message and monitor the account', 'Change the password but report only if misuse occurs', 'Turn off the phone and wait until tomorrow', 'Report immediately and follow the company recovery process', 'Call the support number in the SMS', 'Reopen the page to test whether the password worked'], explanation: 'Prompt reporting lets the organisation revoke sessions and contain the incident.' },
-]
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
 
-function PhoneMessage({ example, found = new Set(), onClue }) {
-  return <article className={`sms-phone ${example.device}`}><div className="phone-status"><span>9:41</span><span>▮▮ ◔</span></div><header><button type="button">‹</button><span>●</span><div><strong>{example.sender}</strong><button className={found.has(`${example.id}-meta`) ? 'found' : ''} type="button" onClick={() => onClue?.(`${example.id}-meta`)}>{example.meta}</button></div></header><div className="sms-thread">{example.messages.map((message, index) => <button className={`${index === example.messages.length - 1 ? 'link' : ''} ${found.has(`${example.id}-${index}`) ? 'found' : ''}`} type="button" key={message} onClick={() => onClue?.(`${example.id}-${index}`)}>{message}</button>)}</div><footer>Message&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;＋</footer></article>
-}
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [smsLessonMode, smsLessonOpen, onClose])
 
-export default function SmsPhishingModule({ onClose, onComplete, completed = false }) {
-  const [step, setStep] = useState(0)
-  const [found, setFound] = useState(() => new Set())
-  const [manipulationAnswers, setManipulationAnswers] = useState({})
-  const [responseAnswers, setResponseAnswers] = useState({})
-  const totalClues = warningMessages.reduce((total, item) => total + Object.keys(item.clues).length, 0)
-  const manipulationComplete = manipulationCases.every((item) => manipulationAnswers[item.id] === item.correct)
-  const responsesComplete = safeResponseCases.every((item) => responseAnswers[item.id] === item.correct)
-  const canContinue = step === 0 ? found.size === totalClues : step === 1 ? manipulationComplete : step === 2 ? responsesComplete : true
+  useEffect(() => {
+    if (smsLessonOpen && smsLessonContentRef.current) {
+      smsLessonContentRef.current.scrollTop = 0
+    }
+  }, [smsLessonOpen, smsLessonStep])
 
-  const discoveries = useMemo(() => warningMessages.flatMap((item) => Object.entries(item.clues).map(([key, text]) => ({ id: `${item.id}-${key}`, text }))), [])
-  const reveal = (id) => {
-    if (!discoveries.some((item) => item.id === id)) return
-    setFound((current) => new Set(current).add(id))
-  }
-  const continueModule = () => {
-    if (step < 3) setStep((current) => current + 1)
-    else if (!completed) onComplete()
-    else onClose()
+  const revealSmsClue = (clueId) => {
+    setSmsCluesFound((current) => new Set(current).add(clueId))
   }
 
-  return <ModuleShell moduleId="sms" title="SMS PHISHING AWARENESS" kicker="UNIVERSAL TRAINING MODULE // SMS PHISHING" steps={['SPOT THE SIGNS', 'BREAK THE MANIPULATION', 'SAFE RESPONSE', 'SUMMARY']} step={step} canContinue={canContinue} onContinue={continueModule} onClose={onClose} completed={completed}>
-    {step === 0 && <div className="training-stage"><div className="stage-intro purple"><div><span>STEP 1 // FIVE MESSAGE STYLES</span><h3>Spot the signs</h3><p>Select suspicious details in each mobile message. Orange clues turn green when inspected.</p></div><strong>{found.size} / {totalClues}<small>SIGNS FOUND</small></strong></div><div className="phone-grid">{warningMessages.map((item) => <PhoneMessage example={item} key={item.id} found={found} onClue={reveal} />)}</div><div className="discovery-list">{discoveries.filter((item) => found.has(item.id)).map((item) => <p key={item.id}><span>✓</span>{item.text}</p>)}</div></div>}
+  const advanceSmsLesson = () => {
+    const manipulationComplete = smsManipulationExamples.every((example) => smsManipulationAnswers[example.id] === example.correct)
+    const safeRoutesComplete = smsSafeRouteExamples.every((example) => smsSafeRouteAnswers[example.id] === example.correct)
 
-    {step === 1 && <div className="training-stage"><div className="stage-intro purple"><div><span>STEP 2 // PSYCHOLOGICAL PRESSURE</span><h3>Break the manipulation</h3><p>Name the tactic being used. Recognising the emotional trigger creates time to verify.</p></div><strong>{Object.keys(manipulationAnswers).length} / 4<small>TACTICS</small></strong></div><div className="manipulation-grid">{manipulationCases.map((item) => <article key={item.id}><blockquote>“{item.text}”</blockquote><div>{item.options.map((option) => <button className={manipulationAnswers[item.id] === option.toLowerCase() ? 'selected' : ''} type="button" key={option} onClick={() => setManipulationAnswers((current) => ({ ...current, [item.id]: option.toLowerCase() }))}>{option}</button>)}</div>{manipulationAnswers[item.id] && <p className={manipulationAnswers[item.id] === item.correct ? 'correct-note' : 'wrong-note'}>{manipulationAnswers[item.id] === item.correct ? '✓ ' : 'Try again. '}{item.explanation}</p>}</article>)}</div></div>}
+    if (smsLessonStep === 0 && smsCluesFound.size < totalSmsClues) return
+    if (smsLessonStep === 1 && !manipulationComplete) return
+    if (smsLessonStep === 2 && !safeRoutesComplete) return
 
-    {step === 2 && <div className="training-stage"><div className="stage-intro purple"><div><span>STEP 3 // DECIDE OUTSIDE THE MESSAGE</span><h3>Choose the safe response</h3><p>Read each mobile conversation and choose the strongest response from six realistic options.</p></div><strong>{Object.keys(responseAnswers).length} / 4<small>SCENARIOS</small></strong></div>{safeResponseCases.map((item) => <article className="safe-response-case" key={item.id}><PhoneMessage example={{ ...item, id: item.id, device: 'ios', meta: 'Incoming SMS' }} /><div><h4>What should you do next?</h4><div className="six-options">{item.options.map((option, index) => <button className={`${responseAnswers[item.id] === index ? 'selected' : ''} ${responseAnswers[item.id] !== undefined && index === item.correct ? 'correct' : ''}`} type="button" key={option} onClick={() => setResponseAnswers((current) => ({ ...current, [item.id]: index }))}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div>{responseAnswers[item.id] !== undefined && <p className={responseAnswers[item.id] === item.correct ? 'correct-note' : 'wrong-note'}>{responseAnswers[item.id] === item.correct ? '✓ Correct. ' : 'Not the safest route. '}{item.explanation}</p>}</div></article>)}</div>}
+    if (smsLessonStep < 3) {
+      setSmsLessonStep((current) => current + 1)
+      return
+    }
 
-    {step === 3 && <div className="training-stage summary-stage purple-summary"><span className="summary-shield">▤</span><h3>Stop the message controlling the next step.</h3><p>SMS phishing succeeds when a short message creates enough urgency, fear, authority or excitement to move you into an attacker-controlled link, phone number or conversation.</p><div className="summary-grid"><div><strong>DO NOT TRUST THE THREAD</strong><p>Sender names and familiar conversations are not proof of identity.</p></div><div><strong>LEAVE THE SMS</strong><p>Use a known app, saved bookmark or independently sourced number.</p></div><div><strong>PROTECT CODES</strong><p>Never share authentication codes or approve prompts you did not start.</p></div><div><strong>REPORT FAST</strong><p>If you interacted, tell the organisation immediately so access can be secured.</p></div></div></div>}
-  </ModuleShell>
+    onComplete()
+    onClose()
+  }
+
+  const correctManipulationCount = smsManipulationExamples.filter((example) => smsManipulationAnswers[example.id] === example.correct).length
+  const correctSafeRouteCount = smsSafeRouteExamples.filter((example) => smsSafeRouteAnswers[example.id] === example.correct).length
+  const smsCurrentStepComplete = smsLessonStep === 0
+    ? smsCluesFound.size === totalSmsClues
+    : smsLessonStep === 1
+      ? correctManipulationCount === smsManipulationExamples.length
+      : smsLessonStep === 2
+        ? correctSafeRouteCount === smsSafeRouteExamples.length
+        : true
+  const smsStepProgress = smsLessonStep === 0
+    ? smsCluesFound.size / totalSmsClues
+    : smsLessonStep === 1
+      ? correctManipulationCount / smsManipulationExamples.length
+      : smsLessonStep === 2
+        ? correctSafeRouteCount / smsSafeRouteExamples.length
+        : 1
+  const smsProgressPercent = Math.round(((smsLessonStep + smsStepProgress) / 4) * 100)
+
+  return (
+        <div className="email-lesson-backdrop sms-lesson-backdrop">
+          <section className="email-lesson-modal universal-lesson sms-lesson-modal" role="dialog" aria-modal="true" aria-labelledby="sms-lesson-title">
+            <header className="email-lesson-header sms-lesson-header">
+              <div>
+                <span className="lesson-kicker">UNIVERSAL TRAINING MODULE // SMS PHISHING</span>
+                <h2 id="sms-lesson-title">SMS PHISHING AWARENESS</h2>
+              </div>
+              <button className="lesson-close" type="button" aria-label="Close SMS training and return to the game" onClick={() => onClose()}>×</button>
+            </header>
+
+            <div className="lesson-progress sms-lesson-progress" aria-label={`SMS training step ${smsLessonStep + 1} of 4`}>
+              {['SPOT THE SIGNS', 'BREAK THE PRESSURE', 'SAFE RESPONSE', 'SUMMARY'].map((label, index) => (
+                <div className={`${index === smsLessonStep ? 'current' : ''} ${index < smsLessonStep ? 'complete' : ''}`} key={label}>
+                  <span>{index < smsLessonStep ? '✓' : index + 1}</span><small>{label}</small>
+                </div>
+              ))}
+            </div>
+
+            <div className="email-lesson-content sms-lesson-content" ref={smsLessonContentRef}>
+              {smsLessonStep === 0 && (
+                <div className="lesson-stage sms-warning-stage">
+                  <div className="lesson-overview-banner sms-overview-banner">
+                    <div><span className="lesson-step-label">STEP 1 // INSPECT FOUR CONVERSATIONS</span><h3>Tap the warning signs</h3></div>
+                    <div className="clue-counter"><strong>{smsCluesFound.size} / {totalSmsClues}</strong><span>warning signs found</span></div>
+                    <p>SMS phishing—sometimes called smishing—can imitate delivery services, banks, toll providers and workplace support. Tap every highlighted part of these fictional messages.</p>
+                  </div>
+
+                  <div className="sms-warning-list">
+                    {smsWarningExamples.map((example, index) => {
+                      const renderSmsHotspot = (area, content, className = 'sms-hotspot', key) => {
+                        const clue = example.clues.find((item) => item.area === area)
+                        if (!clue) return content
+                        const found = smsCluesFound.has(clue.id)
+                        return <button className={`sms-hotspot ${className} ${found ? 'found' : ''}`} type="button" key={key} aria-pressed={found} onClick={() => revealSmsClue(clue.id)}>{content}<span>◎</span></button>
+                      }
+
+                      return (
+                        <article className="sms-warning-example" key={example.id}>
+                          <header><span>CONVERSATION {index + 1}</span><strong>{example.type}</strong></header>
+                          <div className="sms-example-layout">
+                            <div className={`training-phone phone-${example.layout}`} aria-label={`Fictional ${example.type} SMS conversation`}>
+                              <div className="phone-status"><span>{example.time}</span><i>▮▮▮ ᯤ ▰</i></div>
+                              <div className="phone-contact">
+                                <span className="phone-back">‹</span><div className="phone-contact-avatar">{example.sender.slice(0, 1)}</div>
+                                <div><strong>{example.sender}</strong>{renderSmsHotspot(example.headerArea, example.senderMeta, 'sms-header-hotspot')}</div><span className="phone-info">ⓘ</span>
+                              </div>
+                              <div className="phone-thread">
+                                <div className="phone-date">TODAY</div>
+                                {example.priorMessage && <div className="sms-prior-message"><small>EARLIER GENUINE MESSAGE</small><p>{example.priorMessage}</p></div>}
+                                {example.bubbles.map((bubble, bubbleIndex) => bubble.area
+                                  ? renderSmsHotspot(bubble.area, <>{bubble.text}</>, `sms-bubble sms-bubble-${bubble.kind ?? 'text'}`, `${example.id}-${bubble.area}`)
+                                  : <div className="sms-bubble" key={`${example.id}-${bubbleIndex}`}>{bubble.text}</div>)}
+                                <small className="sms-training-note">Fictional training conversation — links and phone numbers are inactive.</small>
+                              </div>
+                              <div className="phone-compose"><span>＋</span><div>Text message</div><span>↑</span></div>
+                            </div>
+
+                            <div className="sms-clue-results" aria-live="polite">
+                              {example.clues.map((clue) => (
+                                <div className={smsCluesFound.has(clue.id) ? 'revealed' : ''} key={clue.id}>
+                                  <span>{smsCluesFound.has(clue.id) ? '✓' : '?'}</span>
+                                  <div><strong>{smsCluesFound.has(clue.id) ? clue.title : 'Warning sign hidden'}</strong><p>{smsCluesFound.has(clue.id) ? clue.explanation : 'Tap one of the highlighted areas inside the phone.'}</p></div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {smsLessonStep === 1 && (
+                <div className="lesson-stage sms-manipulation-stage">
+                  <div className="lesson-overview-banner sms-overview-banner">
+                    <div><span className="lesson-step-label">STEP 2 // UNDERSTAND THE PRESSURE</span><h3>Break the manipulation</h3></div>
+                    <div className="clue-counter"><strong>{correctManipulationCount} / {smsManipulationExamples.length}</strong><span>tactics identified</span></div>
+                    <p>SMS messages are short, so scammers often rely on a strong emotional trigger. Identify the main tactic used in each message.</p>
+                  </div>
+                  <div className="manipulation-grid">
+                    {smsManipulationExamples.map((example, index) => (
+                      <article className="manipulation-card" key={example.id}>
+                        <header><span>MESSAGE {index + 1}</span><strong>{example.label}</strong></header>
+                        <div className="mini-sms-preview"><div className="mini-phone-sender">Unknown sender</div><p>{example.message}</p><small>Received now</small></div>
+                        <div className="manipulation-options">
+                          {manipulationChoices.map((choice) => {
+                            const selected = smsManipulationAnswers[example.id] === choice.id
+                            const answerClass = selected ? (choice.id === example.correct ? 'correct' : 'incorrect') : ''
+                            return <button className={`manipulation-option ${selected ? 'selected' : ''} ${answerClass}`} type="button" key={choice.id} aria-pressed={selected} onClick={() => setSmsManipulationAnswers((current) => ({ ...current, [example.id]: choice.id }))}><span>{choice.icon}</span><div><strong>{choice.title}</strong><small>{choice.description}</small></div></button>
+                          })}
+                        </div>
+                        {smsManipulationAnswers[example.id] && (
+                          <div className={`sms-answer-feedback ${smsManipulationAnswers[example.id] === example.correct ? 'correct' : 'incorrect'}`}>
+                            <strong>{smsManipulationAnswers[example.id] === example.correct ? '✓ Tactic identified' : '× Look at the emotion being triggered'}</strong>
+                            <p>{smsManipulationAnswers[example.id] === example.correct ? example.explanation : 'Ask what feeling the message wants to create before you have time to verify it.'}</p>
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {smsLessonStep === 2 && (
+                <div className="lesson-stage sms-route-stage">
+                  <div className="lesson-overview-banner sms-overview-banner">
+                    <div><span className="lesson-step-label">STEP 3 // LEAVE THE UNTRUSTED PATH</span><h3>Choose the safe response</h3></div>
+                    <div className="clue-counter"><strong>{correctSafeRouteCount} / {smsSafeRouteExamples.length}</strong><span>safe routes chosen</span></div>
+                    <p>The safest response usually leaves the SMS conversation and uses a contact method you found independently. Resolve each scenario.</p>
+                  </div>
+                  <div className="safe-route-list">
+                    {smsSafeRouteExamples.map((example, index) => {
+                      const selectedAnswer = smsSafeRouteAnswers[example.id]
+                      const isCorrect = selectedAnswer === example.correct
+                      return (
+                        <article className="safe-route-card" key={example.id}>
+                          <div className="route-situation">
+                            <span>SCENARIO {index + 1}</span><h3>{example.title}</h3>
+                            <div className="route-phone-preview" aria-label={`Fictional message from ${example.sender}`}>
+                              <div className="route-phone-status"><span>{example.time}</span><i>▮▮▮ ᯤ ▰</i></div>
+                              <div className="route-phone-contact"><span>‹</span><div><strong>{example.sender}</strong><small>Text message</small></div><span>ⓘ</span></div>
+                              <div className="route-phone-thread">
+                                <small>TODAY</small>
+                                {example.messages.map((message, messageIndex) => (
+                                  <div className={`route-message ${message.kind ?? ''} ${message.direction ?? ''}`} key={`${example.id}-message-${messageIndex}`}>{message.direction === 'event' && <span>!</span>}{message.text}</div>
+                                ))}
+                              </div>
+                            </div>
+                            <p className="route-context"><strong>CONTEXT</strong>{example.situation}</p>
+                            <div className="route-impact"><strong>WHY IT MATTERS TO THE COMPANY</strong><p>{example.companyImpact}</p></div>
+                          </div>
+                          <div className="route-decisions">
+                            <span>WHAT SHOULD YOU DO NEXT?</span>
+                            <div className="route-options-grid">
+                              {example.options.map((option, optionIndex) => {
+                                const selected = selectedAnswer === optionIndex
+                                const answerClass = selected ? (optionIndex === example.correct ? 'correct' : 'incorrect') : ''
+                                return <button className={`route-option ${selected ? 'selected' : ''} ${answerClass}`} type="button" key={option} aria-pressed={selected} onClick={() => setSmsSafeRouteAnswers((current) => ({ ...current, [example.id]: optionIndex }))}><span>{String.fromCharCode(65 + optionIndex)}</span>{option}</button>
+                              })}
+                            </div>
+                            {selectedAnswer !== undefined && <div className={`sms-answer-feedback ${isCorrect ? 'correct' : 'incorrect'}`}><strong>{isCorrect ? '✓ Safe route selected' : '× This keeps you in an unverified path'}</strong><p>{isCorrect ? example.success : 'Try again. Choose an option that does not rely on the link, number or identity supplied by the SMS.'}</p></div>}
+                          </div>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {smsLessonStep === 3 && (
+                <div className="lesson-stage summary-stage sms-summary-stage">
+                  <div className="lesson-overview-banner summary-banner sms-overview-banner">
+                    <div><span className="lesson-step-label">STEP 4 // SMS PHISHING SUMMARY</span><h3>Stop. Leave the message. Verify independently.</h3></div>
+                    <p>A sender name, familiar conversation or personal detail is not proof of identity. Treat unexpected links, payment requests, login prompts and requests for one-time codes as reasons to pause.</p>
+                  </div>
+                  <div className="summary-principles sms-summary-principles">
+                    <article><span>01</span><strong>STOP</strong><p>Notice urgency, fear, authority or reward before the emotion drives the decision.</p></article>
+                    <article><span>02</span><strong>DON’T USE THE SMS</strong><p>Do not follow its link, call its number, reply with information or approve an unexpected prompt.</p></article>
+                    <article><span>03</span><strong>CHECK INDEPENDENTLY</strong><p>Open the known app or website, or use a phone number already held by the organisation.</p></article>
+                    <article><span>04</span><strong>REPORT QUICKLY</strong><p>Report suspicious messages and any information entered so the company can respond early.</p></article>
+                  </div>
+                  <section className="summary-impact sms-summary-impact">
+                    <div><span className="lesson-step-label">HOW SMS PHISHING CAN REDUCE COMPANY FUNDS</span><h3>A short message can create long-term costs</h3><p>The simulation’s funds meter represents the wider business harm caused when SMS phishing succeeds.</p></div>
+                    <div className="summary-impact-grid">
+                      <article><strong>PAYMENT &amp; CARD LOSS</strong><p>Fake fees, payment pages and impersonation can expose company cards or redirect money.</p></article>
+                      <article><strong>ACCOUNT COMPROMISE</strong><p>Passwords, authentication approvals or one-time codes can expose company services.</p></article>
+                      <article><strong>RESPONSE &amp; DOWNTIME</strong><p>Security teams may need to secure accounts, inspect devices and pause affected work.</p></article>
+                      <article><strong>DATA &amp; TRUST</strong><p>Exposed customer or staff information can create notification, support and reputation costs.</p></article>
+                    </div>
+                  </section>
+                  <section className="learning-resources sms-learning-resources">
+                    <div><span className="lesson-step-label">CONTINUE LEARNING</span><h3>Official Australian guidance</h3><p>Use these resources for current SMS scam prevention and reporting advice.</p></div>
+                    <div className="resource-links">
+                      <a href="https://www.cyber.gov.au/threats/types-threats/phishing" target="_blank" rel="noreferrer"><strong>ACSC — Phishing</strong><span>Email and text-message protection advice ›</span></a>
+                      <a href="https://www.scamwatch.gov.au/types-of-scams/phishing-scams" target="_blank" rel="noreferrer"><strong>Scamwatch — Phishing scams</strong><span>Warning signs and safe verification ›</span></a>
+                      <a href="https://www.acma.gov.au/phone-and-sms-scams" target="_blank" rel="noreferrer"><strong>ACMA — Phone and SMS scams</strong><span>Protect yourself from scam messages ›</span></a>
+                      <a href="https://www.esafety.gov.au/key-topics/staying-safe/online-scams" target="_blank" rel="noreferrer"><strong>eSafety — Online scams</strong><span>Practical online safety guidance ›</span></a>
+                    </div>
+                  </section>
+                  <div className="completion-callout sms-completion-callout"><span>✓</span><div><strong>MODULE READY TO COMPLETE</strong><p>{completed ? 'You have reviewed the complete SMS Phishing training module again.' : 'Complete the module to mark SMS Phishing as finished in your Learning Library.'}</p></div></div>
+                </div>
+              )}
+            </div>
+
+            <footer className="email-lesson-footer sms-lesson-footer">
+              <button className="lesson-secondary" type="button" disabled={smsLessonStep === 0} onClick={() => setSmsLessonStep((current) => Math.max(0, current - 1))}>‹ PREVIOUS</button>
+              <div><span>LEARNING PROGRESS</span><strong>{smsProgressPercent}%</strong></div>
+              <button className="lesson-primary" type="button" disabled={!smsCurrentStepComplete} onClick={advanceSmsLesson}>{smsLessonStep === 3 ? (completed ? 'FINISH REVIEW' : 'COMPLETE MODULE') : 'CONTINUE'} <span>›</span></button>
+            </footer>
+          </section>
+        </div>
+  )
 }

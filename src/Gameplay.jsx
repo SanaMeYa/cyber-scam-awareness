@@ -11,7 +11,8 @@ import { resolveTurn } from './gameLogic/resolveTurn.js'
 
 import TrainingLibrary from './training/TrainingLibrary.jsx'
 import useTrainingProgress from './training/useTrainingProgress.js'
-import { attackTrainingRequirements, getTrainingModule } from './training/trainingRegistry.js'
+import { attackTrainingRequirements, learningModuleCatalog } from './training/trainingRegistry.js'
+import { getPreferredNarrationVoice } from './training/narrationVoices.js'
 
 const targets = [
   {
@@ -77,43 +78,12 @@ const techniques = [
   ] },
 ]
 
+
 const startingFunds = 5_000_000
 const formatMoney = (value) => new Intl.NumberFormat('en-AU', {
   style: 'currency', currency: 'AUD', maximumFractionDigits: 0,
 }).format(value)
 
-const femaleVoiceHints = [
-  'natasha', 'catherine', 'karen', 'samantha', 'zira', 'aria', 'jenny',
-  'sonia', 'victoria', 'moira', 'tessa', 'ava', 'susan', 'hazel', 'serena',
-  'female', 'siri',
-]
-
-const getPreferredNarrationVoice = () => {
-  if (!('speechSynthesis' in window)) return null
-
-  const voices = window.speechSynthesis.getVoices()
-  const scoreVoice = (voice) => {
-    const name = voice.name.toLowerCase()
-    const lang = voice.lang.toLowerCase()
-    let score = 0
-
-    if (lang.startsWith('en-au')) score += 50
-    else if (lang.startsWith('en-gb')) score += 42
-    else if (lang.startsWith('en')) score += 35
-    else return -100
-
-    if (name.includes('natural')) score += 90
-    if (name.includes('online')) score += 35
-    if (name.includes('premium') || name.includes('enhanced')) score += 28
-    if (femaleVoiceHints.some((hint) => name.includes(hint))) score += 45
-    if (name.includes('google')) score += 12
-    if (voice.localService) score += 4
-
-    return score
-  }
-
-  return [...voices].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0] ?? null
-}
 
 function Gameplay() {
   const navigate = useNavigate()
@@ -150,6 +120,7 @@ function Gameplay() {
   const clickAudioContextRef = useRef(null)
   const narrationVoiceRef = useRef(null)
   const utteranceRef = useRef(null)
+
   const roundLocked = Boolean(pendingResult || result)
 
   const selectedTarget = useMemo(
@@ -348,6 +319,7 @@ function Gameplay() {
   const selectedOption = techniques.find((item) => item.id === selectedTechnique)
     ?.options.find((option) => option.id === subtypes[selectedTechnique])
 
+
   const requiredModuleForAttack = (techniqueId, subtypeId) => (
     techniqueId === 'phishing' ? attackTrainingRequirements[subtypeId] ?? null : null
   )
@@ -359,7 +331,7 @@ function Gameplay() {
 
   const selectedRequiredModuleId = requiredModuleForAttack(selectedTechnique, subtypes[selectedTechnique])
   const selectedAttackLocked = isAttackTypeLocked(selectedTechnique, subtypes[selectedTechnique])
-  const selectedRequiredModule = getTrainingModule(selectedRequiredModuleId)
+  const selectedRequiredModule = learningModuleCatalog.find((module) => module.id === selectedRequiredModuleId)
 
   const resetGame = () => {
     stopNarration()
@@ -446,9 +418,8 @@ function Gameplay() {
 
     stopNarration()
 
-    const exposureGain = pendingResult.exposureGain ?? pendingResult.alertIncrease ?? 0
     const nextFunds = Math.max(0, funds - pendingResult.damage)
-    const nextExposure = Math.min(100, exposure + exposureGain)
+    const nextExposure = Math.min(100, exposure + pendingResult.alertIncrease)
     const nextTurn = turn + 1
     const nextTechniqueCounts = {
       ...techniqueCounts,
@@ -473,22 +444,19 @@ function Gameplay() {
     setResult(pendingResult)
     setPendingResult(null)
 
-    const allTargetsCompleted = nextSuccessfulTargetIds.size === targets.length
+    const ceoTakedown = pendingResult.success && selectedTarget.id === 'marcus'
+    const won = nextFunds <= 0 || ceoTakedown
 
-    const detected = nextExposure >= 100
-
-    if (detected || allTargetsCompleted) {
-      navigate(detected ? '/game-over' : '/victory', {
+    if (won || nextExposure >= 100) {
+      navigate(won ? '/victory' : '/game-over', {
         state: {
-          reason: detected ? 'detected' : 'completed',
+          reason: !won ? 'detected' : ceoTakedown ? 'ceo' : 'bankrupt',
           turnsPlayed: nextTurn,
           startingFunds,
           fundsRemaining: nextFunds,
           fundsRemoved: startingFunds - nextFunds,
           exposure: nextExposure,
-          exposureGain,
-          targetsCompleted: nextSuccessfulTargetIds.size,
-          totalTargets: targets.length,
+          exposureGain: pendingResult.exposureGain,
           finalTarget: selectedTarget.name,
           technique: techniques.find((item) => item.id === selectedTechnique)?.title ?? 'Technique',
           subtype: selectedOption.label,
@@ -531,6 +499,7 @@ function Gameplay() {
               completedModuleIds={completedModuleIds}
               onModuleComplete={completeModule}
               onAudioChange={setTrainingAudioPlaying}
+              onBeforeModuleOpen={stopNarration}
             />
             <button className="utility-button" type="button" onClick={openAudioSettings} aria-haspopup="dialog">
               <span className="settings-icon">⚙</span> SETTINGS
