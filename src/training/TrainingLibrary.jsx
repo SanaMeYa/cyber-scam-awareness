@@ -4,6 +4,9 @@ import SmsPhishingModule from './phishing/SmsPhishingModule.jsx'
 import VishingModule from './phishing/VishingModule.jsx'
 import VoiceCloneModule from './deepfake/VoiceCloneModule.jsx'
 import VideoDeepfakeModule from './deepfake/VideoDeepfakeModule.jsx'
+import FacebookModule from './social/FacebookModule.jsx'
+import InstagramModule from './social/InstagramModule.jsx'
+import LinkedInModule from './social/LinkedInModule.jsx'
 import { learningModuleCatalog } from './trainingRegistry.js'
 import './TrainingModules.css'
 
@@ -136,6 +139,9 @@ const TrainingLibrary = forwardRef(function TrainingLibrary({ completedModuleIds
       {activeModuleId === 'vishing' && <VishingModule completed={completedModuleIds.has('vishing')} onComplete={() => completeModule('vishing')} onClose={closeModule} onAudioChange={onAudioChange} />}
       {activeModuleId === 'voice-clone' && <VoiceCloneModule completed={completedModuleIds.has('voice-clone')} onComplete={() => completeModule('voice-clone')} onClose={closeModule} />}
       {activeModuleId === 'video-deepfake' && <VideoDeepfakeModule completed={completedModuleIds.has('video-deepfake')} onComplete={() => completeModule('video-deepfake')} onClose={closeModule} />}
+      {activeModuleId === 'facebook' && <FacebookModule completed={completedModuleIds.has('facebook')} onComplete={() => completeModule('facebook')} onClose={closeModule} />}
+      {activeModuleId === 'instagram' && <InstagramModule completed={completedModuleIds.has('instagram')} onComplete={() => completeModule('instagram')} onClose={closeModule} />}
+      {activeModuleId === 'linkedin' && <LinkedInModule completed={completedModuleIds.has('linkedin')} onComplete={() => completeModule('linkedin')} onClose={closeModule} />}
     </>
   )
 })
