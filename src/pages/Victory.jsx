@@ -163,7 +163,7 @@ export default function Victory() {
         <nav className="victory-actions" aria-label="Victory actions">
           <Link className="primary-victory-action" to="/gameplay"><Icon type="restart" /> Play again</Link>
           <Link to="/"><Icon type="home" /> Back to home</Link>
-          <Link to="/how-to-play"><Icon type="shieldCheck" /> Learn about scams</Link>
+          <Link to="/learn-about-scams"><Icon type="shieldCheck" /> Learn about scams</Link>
         </nav>
 
         <footer className="victory-footer">

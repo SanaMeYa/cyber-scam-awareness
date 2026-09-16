@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local voice-clone service environments, models and generated files
+services/voice-clone/.venv*/
+services/voice-clone/.model-cache/
+services/voice-clone/.python/
+services/voice-clone/.uv-cache/
+services/voice-clone/.uv-tool/
+services/voice-clone/outputs/
+services/voice-clone/__pycache__/
+services/voice-clone/*.pyc

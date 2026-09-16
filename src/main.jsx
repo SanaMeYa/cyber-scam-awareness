@@ -6,6 +6,7 @@ import Gameplay from './Gameplay.jsx'
 import GameOver from './pages/GameOver.jsx'
 import Home from './pages/Home.jsx'
 import HowToPlay from './pages/HowToPlay.jsx'
+import LearnAboutScams from './pages/LearnAboutScams.jsx'
 import Victory from './pages/Victory.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/how-to-play" element={<HowToPlay />} />
+        <Route path="/learn-about-scams" element={<LearnAboutScams />} />
         <Route path="/gameplay" element={<Gameplay />} />
         <Route path="/game-over" element={<GameOver />} />
         <Route path="/victory" element={<Victory />} />

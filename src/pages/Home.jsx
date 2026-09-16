@@ -109,9 +109,9 @@ export default function Home() {
             </Link>
           </div>
 
-          <a href="#" className="home-learn-link">
+          <Link to="/learn-about-scams" className="home-learn-link">
             Learn about scams <span aria-hidden="true">›</span>
-          </a>
+          </Link>
         </div>
 
         <div className="home-stats">

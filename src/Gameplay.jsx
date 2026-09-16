@@ -79,6 +79,29 @@ const techniques = [
 ]
 
 
+const intelUnlocks = {
+  jordan: {
+    targetId: 'derek', targetName: 'Derek Combs',
+    clue: 'Internal support messages show that Derek responds confidently when a request uses familiar technical language and appears to come from another IT worker.',
+    boost: { technique: 'phishing', subtype: 'teams' },
+  },
+  priya: {
+    targetId: 'sarah', targetName: 'Sarah Lindqvist',
+    clue: 'Reception notes show that Sarah is the trusted contact for urgent staff problems and often prioritises requests that appear personal and time-sensitive.',
+    boost: { technique: 'phishing', subtype: 'email' },
+  },
+  derek: {
+    targetId: 'marcus', targetName: 'Marcus Reyes',
+    clue: 'IT records point to a large archive of Marcus speaking at public events, including clean recordings where his voice can be heard clearly.',
+    boost: { technique: 'deepfake', subtype: 'voice' },
+  },
+  sarah: {
+    targetId: 'marcus', targetName: 'Marcus Reyes',
+    clue: 'Executive scheduling notes reveal when Marcus is between meetings and more likely to receive an unusual request without his assistant present.',
+    boost: { technique: 'deepfake', subtype: 'video' },
+  },
+}
+
 const startingFunds = 5_000_000
 const formatMoney = (value) => new Intl.NumberFormat('en-AU', {
   style: 'currency', currency: 'AUD', maximumFractionDigits: 0,
@@ -316,13 +339,20 @@ function Gameplay() {
     return false
   }
 
+  const unlockedIntel = Object.entries(intelUnlocks)
+    .filter(([sourceTargetId]) => successfulTargetIds.has(sourceTargetId))
+    .map(([sourceTargetId, intel]) => ({ ...intel, sourceTargetId }))
+
+  const selectedTargetIntel = unlockedIntel.filter((intel) => intel.targetId === selectedTarget.id)
+
+  const matchingIntel = (targetId, technique, subtype) => unlockedIntel.filter((intel) =>
+    intel.targetId === targetId && intel.boost.technique === technique && intel.boost.subtype === subtype)
+
   const selectedOption = techniques.find((item) => item.id === selectedTechnique)
     ?.options.find((option) => option.id === subtypes[selectedTechnique])
 
 
-  const requiredModuleForAttack = (techniqueId, subtypeId) => (
-    techniqueId === 'phishing' ? attackTrainingRequirements[subtypeId] ?? null : null
-  )
+  const requiredModuleForAttack = (techniqueId, subtypeId) => attackTrainingRequirements[techniqueId]?.[subtypeId] ?? null
 
   const isAttackTypeLocked = (techniqueId, subtypeId) => {
     const moduleId = requiredModuleForAttack(techniqueId, subtypeId)
@@ -374,9 +404,9 @@ function Gameplay() {
     const nextRepeatCount = (targetAttemptCounts[selectedTarget.id] ?? 0) + 1
 
     const traitMatch = isStrong ? 'positive' : isWeak ? 'negative' : 'neutral'
-    const intelLevel = traitMatch === 'positive'
-      ? successfulTargetIds.size >= 1 ? 'multiple' : 'relevant'
-      : successfulTargetIds.size >= 1 ? 'relevant' : 'none'
+    const matchingIntelCount = matchingIntel(selectedTarget.id, selectedTechnique, subtype).length
+    const intelLevel = matchingIntelCount > 1 ? 'multiple'
+      : matchingIntelCount === 1 ? 'relevant' : 'none'
 
     const turnResult = resolveTurn({
       targetId: selectedTarget.id,
@@ -404,6 +434,7 @@ function Gameplay() {
       effectiveMatch: isStrong,
       resistedMatch: isWeak,
       targetCompleted: turnResult.success && isStrong,
+      intelReward: intelUnlocks[selectedTarget.id] ?? null,
       nextRepeatCount,
     })
   }
@@ -554,10 +585,11 @@ function Gameplay() {
               {targets.map((target) => {
                 const locked = targetLocked(target)
                 const successful = successfulTargetIds.has(target.id)
+                const intelCount = unlockedIntel.filter((intel) => intel.targetId === target.id).length
                 return <button className={`target-row ${target.id === selectedTargetId ? 'selected' : ''} ${successful ? 'completed' : ''}`} key={target.id} type="button" disabled={locked || roundLocked} title={successful ? `${target.name}: attack successful` : locked ? target.lockedMessage : roundLocked ? 'Complete the current round first' : `Select ${target.name}`} onClick={() => selectTarget(target.id)}>
                   <span className={`mini-avatar ${target.tone}`}><img src={target.image} alt="" /></span>
                   <span className="target-row-copy"><strong>{target.name}</strong><small>{target.role}</small></span>
-                  <span className={`level-tag ${successful ? 'success' : ''}`}>{successful ? 'ATTACK SUCCESSFUL' : locked ? 'LOCKED' : `LEVEL ${target.tier}`}</span>
+                  <span className={`level-tag ${successful ? 'success' : intelCount ? 'has-intel' : ''}`}>{successful ? 'ATTACK SUCCESSFUL' : intelCount ? `INTEL ${intelCount}` : locked ? 'LOCKED' : `LEVEL ${target.tier}`}</span>
                 </button>
               })}
             </div>
@@ -566,6 +598,15 @@ function Gameplay() {
           <article className="scenario-panel glass-panel">
             {!result ? <>
               <div className="section-kicker">SCENARIO</div><p className="scenario-copy">{selectedTarget.scenario}</p>
+              <section className={`target-intel-brief ${selectedTargetIntel.length ? 'unlocked' : ''}`} aria-label={`Intelligence for ${selectedTarget.name}`}>
+                <div className="intel-brief-heading">
+                  <span>TARGET INTELLIGENCE // {selectedTarget.name}</span>
+                  <strong>{selectedTargetIntel.length ? `${selectedTargetIntel.length} CLUE${selectedTargetIntel.length === 1 ? '' : 'S'}` : 'NO INTEL'}</strong>
+                </div>
+                {selectedTargetIntel.length
+                  ? selectedTargetIntel.map((intel) => <p className="intel-clue" key={intel.sourceTargetId}>{intel.clue}</p>)
+                  : <p>No additional intelligence has been gathered for this target. Successful attacks on other employees may reveal a useful lead.</p>}
+              </section>
               <div className="audio-controls" aria-label="Narration controls">
                 <button className={narrationState === 'playing' ? 'active' : ''} type="button" aria-label={narrationState === 'paused' ? 'Resume narration' : 'Play narration'} disabled={narrationState === 'unsupported'} onClick={() => playNarration(false)}><span>▶</span> {narrationState === 'paused' ? 'RESUME' : 'PLAY'}</button>
                 <button className={narrationState === 'paused' ? 'active' : ''} type="button" aria-label="Pause narration" disabled={narrationState !== 'playing'} onClick={pauseNarration}><span>Ⅱ</span> PAUSE</button>
@@ -585,6 +626,11 @@ function Gameplay() {
               </div>
               <div className="result-impact"><div><small>COMPANY DAMAGE</small><strong>−{formatMoney(result.damage)}</strong></div><div><small>EXPOSURE GAIN</small><strong>+{result.alertIncrease}%</strong></div></div>
               <p>{result.dialogue.line}</p><div className="defence-note"><strong>DEFENSIVE LESSON</strong><span>{result.dialogue.tag}</span></div>
+              {result.targetCompleted && result.intelReward && <div className="intel-unlock-notice">
+                <strong>NEW TARGET INTELLIGENCE</strong>
+                <span>Your successful {techniques.find((item) => item.id === selectedTechnique)?.title} attack on {selectedTarget.name} uncovered a lead on {result.intelReward.targetName}.</span>
+                <p>{result.intelReward.clue}</p>
+              </div>}
               {result.success && !result.targetCompleted && <div className="match-warning">This attempt caused limited simulated damage, but it did not match {selectedTarget.name}&apos;s vulnerabilities. The target remains active.</div>}
               {result.fatigue && <div className="fatigue-warning">Repeated contact made {selectedTarget.name} more alert.</div>}
             </div>}

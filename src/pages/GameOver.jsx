@@ -150,7 +150,7 @@ export default function GameOver() {
         <nav className="game-over-actions" aria-label="Game over actions">
           <Link className="primary-game-over-action" to="/gameplay"><Icon type="restart" /> Try again</Link>
           <Link to="/"><Icon type="home" /> Back to home</Link>
-          <Link to="/how-to-play"><Icon type="shield" /> Learn about scams</Link>
+          <Link to="/learn-about-scams"><Icon type="shield" /> Learn about scams</Link>
         </nav>
 
         <footer className="game-over-footer">
