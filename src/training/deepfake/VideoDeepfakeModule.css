@@ -1,0 +1,321 @@
+/*
+  VideoDeepfakeModule.css
+  Styling for all three sections of the Deepfake Awareness module:
+  Section 1 "Spot the Signs", Section 2 "Real or Fake", Section 3 "Summary".
+
+  This file only defines classes that don't already exist in
+  TrainingModules.css. Shared lesson chrome — .lesson-overview-banner,
+  .clue-counter, .inspection-example, .comparison-example,
+  .comparison-grid, .example-clue-results, .answer-feedback,
+  .completion-callout, .summary-principles, .summary-impact,
+  .learning-resources, .lesson-progress, .lesson-primary/.lesson-secondary,
+  .email-lesson-modal, .email-lesson-footer, etc. — comes from that shared
+  stylesheet (loaded globally, the same way EmailPhishingModule.jsx relies
+  on it without importing any CSS of its own). If you ever use
+  VideoDeepfakeModule outside that app shell, bring those shared rules along
+  with this file too.
+*/
+
+/* ---------------------------------------------------------------------
+   Section 1 — Spot the Signs (hotspot media + clue results)
+--------------------------------------------------------------------- */
+
+.deepfake-example-layout {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(480px, 1.3fr) minmax(270px, .7fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.deepfake-caption {
+  margin: 0 0 10px;
+  color: var(--muted, #a9bed1);
+  font-size: .62rem;
+  line-height: 1.45;
+}
+
+.deepfake-media-frame {
+  max-width: 460px;
+  position: relative;
+  border: 1px solid rgba(63, 137, 181, .4);
+  background: #05111f;
+}
+
+.deepfake-media-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  padding: 3px 8px;
+  color: #07151f;
+  background: var(--cyan, #08d8ff);
+  font-size: .5rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+
+.deepfake-media-inner {
+  position: relative;
+  line-height: 0;
+}
+
+.deepfake-media-inner img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Hotspot marker — same idea as .email-hotspot's dashed/pulsing "?" bubble,
+   adapted to a small circular marker positioned over an image with
+   left/top percentages. */
+.deepfake-hotspot {
+  position: absolute;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px dashed var(--amber, #ffb52e);
+  background: rgba(20, 12, 2, .45);
+  color: var(--amber, #ffb52e);
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 0 0 6px rgba(255, 178, 52, .12);
+  animation: deepfake-hotspot-pulse 1.6s ease-in-out infinite;
+}
+
+.deepfake-hotspot span {
+  display: block;
+  transform: translateY(-1px);
+}
+
+.deepfake-hotspot:hover {
+  background: rgba(255, 178, 52, .22);
+}
+
+.deepfake-hotspot.found {
+  border: 2px solid #1fbe8e;
+  color: #55e3ad;
+  background: rgba(19, 99, 76, .5);
+  box-shadow: 0 0 0 6px rgba(31, 190, 142, .12);
+  animation: none;
+}
+
+@keyframes deepfake-hotspot-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(255, 178, 52, .1); }
+  50% { box-shadow: 0 0 0 9px rgba(255, 178, 52, .18); }
+}
+
+.deepfake-checklist {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--line, rgba(90, 163, 217, .32));
+  background: rgba(2, 18, 36, .55);
+}
+
+.deepfake-checklist h3 {
+  margin: 0 0 8px;
+  font-size: .78rem;
+  letter-spacing: .03em;
+  color: var(--cyan, #08d8ff);
+}
+
+.deepfake-checklist ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--muted, #a9bed1);
+  font-size: .64rem;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------
+   Section 2 — Real or Fake (video/photo comparison cards)
+--------------------------------------------------------------------- */
+
+.deepfake-comparison-grid {
+  align-items: stretch;
+}
+
+.comparison-media-option {
+  min-height: 240px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(75, 133, 171, .38);
+  background: rgba(3, 15, 28, .8);
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.comparison-media-option.selected {
+  border-width: 2px;
+}
+
+.comparison-media-option.correct {
+  border-color: #23b983;
+  box-shadow: 0 0 0 3px rgba(35, 185, 131, .14);
+}
+
+.comparison-media-option.incorrect {
+  border-color: #db5b68;
+  box-shadow: 0 0 0 3px rgba(219, 91, 104, .12);
+}
+
+.media-choice-label {
+  padding: 7px 11px;
+  color: #07151f;
+  background: var(--cyan, #08d8ff);
+  font-size: .53rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.media-choice-frame {
+  flex: 1;
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(63, 137, 181, .3);
+  background: #05111f;
+}
+
+.media-choice-frame video,
+.media-choice-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  background: #000;
+}
+
+.media-placeholder {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 24px 10px;
+  color: #6d879a;
+  text-align: center;
+}
+
+.media-placeholder span {
+  font-size: 1.6rem;
+  opacity: .7;
+}
+
+.media-placeholder p {
+  margin: 0;
+  font-size: .58rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #6d879a;
+}
+
+.media-select-button {
+  padding: 8px 10px;
+  border: 1px solid rgba(90, 163, 217, .4);
+  background: rgba(0, 139, 187, .12);
+  color: #d8ecf6;
+  font-size: .56rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+
+.media-select-button:hover,
+.media-select-button:focus-visible {
+  outline: none;
+  border-color: var(--cyan, #08d8ff);
+  background: rgba(0, 139, 187, .22);
+}
+
+.comparison-media-option.correct .media-select-button {
+  border-color: #23b983;
+  background: rgba(35, 185, 131, .16);
+  color: #bdf5e0;
+}
+
+.comparison-media-option.incorrect .media-select-button {
+  border-color: #db5b68;
+  background: rgba(219, 91, 104, .14);
+  color: #ffd7db;
+}
+
+/* ---------------------------------------------------------------------
+   Section 3 — Summary (recap grid alongside the shared .summary-* rules)
+--------------------------------------------------------------------- */
+
+.deepfake-summary-intro {
+  margin: 0 0 4px;
+  color: var(--muted, #a9bed1);
+  font-size: .64rem;
+  line-height: 1.55;
+}
+
+.deepfake-signs-recap {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line, rgba(90, 163, 217, .32));
+  background: rgba(2, 18, 36, .55);
+}
+
+.deepfake-signs-recap > div {
+  margin-bottom: 10px;
+}
+
+.deepfake-signs-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.deepfake-signs-recap-grid article {
+  padding: 11px;
+  border: 1px solid rgba(63, 137, 181, .3);
+  background: rgba(3, 20, 39, .6);
+}
+
+.deepfake-signs-recap-grid strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--cyan, #08d8ff);
+  font-size: .62rem;
+  letter-spacing: .03em;
+}
+
+.deepfake-signs-recap-grid p {
+  margin: 0;
+  color: #a8bdcb;
+  font-size: .58rem;
+  line-height: 1.45;
+}
+
+/* Three-step progress stepper for this module (Gameplay.css's base
+   .lesson-progress assumes 4 steps via repeat(4, 1fr)). */
+.deepfake-lesson-progress {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 900px) {
+  .deepfake-example-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .media-choice-frame video,
+  .media-choice-frame img {
+    max-height: 220px;
+  }
+
+  .deepfake-signs-recap-grid {
+    grid-template-columns: 1fr;
+  }
+}
