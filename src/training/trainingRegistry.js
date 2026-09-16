@@ -33,17 +33,17 @@ export const learningModuleCatalog = [
   {
     id: 'facebook', number: '05', category: 'FAKE SOCIAL PROFILE', theme: 'social', icon: 'f', title: 'Facebook Impersonation',
     description: 'Investigate cloned profiles, suspicious friend requests and attempts to move conversations off-platform.',
-    format: 'Module in development', available: false,
+    format: '4 interactive activities', available: true,
   },
   {
     id: 'instagram', number: '06', category: 'FAKE SOCIAL PROFILE', theme: 'social', icon: '◎', title: 'Instagram Impersonation',
     description: 'Recognise copied identities, deceptive direct messages and fake accounts built from public information.',
-    format: 'Module in development', available: false,
+    format: '4 interactive activities', available: true,
   },
   {
     id: 'linkedin', number: '07', category: 'FAKE SOCIAL PROFILE', theme: 'social', icon: 'in', title: 'LinkedIn Impersonation',
     description: 'Assess fabricated professional histories, suspicious mutual connections and false recruitment approaches.',
-    format: 'Module in development', available: false,
+    format: '4 interactive activities', available: true,
   },
   {
     id: 'voice-clone', number: '08', category: 'DEEPFAKE', theme: 'deepfake', icon: '◖', title: 'Voice-Clone Deepfake',
