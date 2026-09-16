@@ -1,3 +1,1 @@
-export default function VoiceCloneModule() {
-  return null
-}
+export { default } from './voiceClone/VoiceCloneModule.jsx'

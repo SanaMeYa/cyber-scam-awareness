@@ -1,0 +1,6 @@
+chatterbox-tts==0.1.7
+fastapi==0.141.1
+uvicorn==0.53.0
+python-multipart==0.0.32
+imageio-ffmpeg==0.6.0
+resemble-perth==1.0.1

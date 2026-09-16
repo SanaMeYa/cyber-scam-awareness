@@ -1,0 +1,82 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap");
+
+.learn-scams {
+  --cyan: #00e5f2;
+  --pink: #f55bb6;
+  --text: #f2f8fb;
+  --muted: #9bb3c1;
+  min-height: 100svh;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 24px clamp(18px, 4vw, 62px) 30px;
+  color: var(--text);
+  background: radial-gradient(circle at 78% 12%, rgba(0, 157, 255, .18), transparent 28%), radial-gradient(circle at 18% 55%, rgba(241, 54, 171, .08), transparent 28%), #010b18;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+.learn-scams *, .learn-scams *::before, .learn-scams *::after { box-sizing: border-box; }
+.learn-scams a { color: inherit; text-decoration: none; }
+.learn-scams-grid { position: absolute; inset: 0; z-index: -1; opacity: .18; background-image: linear-gradient(rgba(0, 205, 239, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 205, 239, .08) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, black, transparent 76%); }
+.learn-scams-header { max-width: 1320px; margin: 0 auto; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.learn-scams-brand { display: inline-flex; flex-direction: column; font-family: "Barlow Condensed", sans-serif; }
+.learn-scams-brand strong { font-size: clamp(1.7rem, 3vw, 2.6rem); letter-spacing: .055em; line-height: 1; }
+.learn-scams-brand span { margin-top: 7px; color: var(--cyan); font: 600 .68rem "Inter", sans-serif; letter-spacing: .06em; }
+.learn-scams-home { padding: 12px 16px; border: 1px solid rgba(0, 229, 242, .65); color: #9ceef5; font-size: .72rem; font-weight: 700; letter-spacing: .08em; transition: background .2s, color .2s; }
+.learn-scams-home:hover, .learn-scams-home:focus-visible { color: #fff; background: rgba(0, 229, 242, .12); outline: none; }
+.learn-scams-hero, .learn-scams-section, .learn-scams-footer { width: min(1180px, 100%); margin-inline: auto; }
+.learn-scams-hero { padding: clamp(70px, 10vw, 125px) 0 54px; text-align: center; }
+.learn-scams-eyebrow, .learn-scams-section > header > span { color: var(--cyan); font-size: .68rem; font-weight: 700; letter-spacing: .16em; }
+.learn-scams h1 { margin: 12px 0 10px; font: 600 clamp(2.8rem, 7vw, 5.6rem)/.95 "Barlow Condensed", sans-serif; letter-spacing: .055em; }
+.learn-scams-hero > p { max-width: 790px; margin: 0 auto; color: #b0c4cf; font-size: clamp(.9rem, 1.3vw, 1.06rem); line-height: 1.7; }
+.stop-check-protect { margin-top: 38px; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid rgba(0, 229, 242, .35); background: rgba(2, 22, 39, .7); text-align: left; }
+.stop-check-protect article { min-height: 120px; padding: 20px; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; border-right: 1px solid rgba(0, 229, 242, .19); }
+.stop-check-protect article:last-child { border-right: 0; }
+.stop-check-protect article > span { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--cyan); color: var(--cyan); font-size: .68rem; }
+.stop-check-protect strong { color: #fff; letter-spacing: .08em; }
+.stop-check-protect p { margin: 7px 0 0; color: #8fa9b7; font-size: .78rem; line-height: 1.5; }
+.learn-scams-section { padding: 54px 0; border-top: 1px solid rgba(0, 229, 242, .2); }
+.learn-scams-section > header { margin-bottom: 25px; }
+.learn-scams-section h2 { margin: 7px 0; font: 500 clamp(1.8rem, 4vw, 2.7rem) "Barlow Condensed", sans-serif; letter-spacing: .04em; }
+.learn-scams-section > header p { margin: 0; color: var(--muted); }
+.scam-resource-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.scam-resource-card { min-height: 230px; padding: 22px; position: relative; display: flex; flex-direction: column; border: 1px solid rgba(55, 182, 219, .3); background: linear-gradient(145deg, rgba(4, 35, 57, .85), rgba(2, 18, 34, .9)); transition: transform .2s, border-color .2s, box-shadow .2s; }
+.scam-resource-card::after { content: ''; position: absolute; top: -1px; right: -1px; width: 38px; height: 38px; border-top: 2px solid var(--pink); border-right: 2px solid var(--pink); }
+.scam-resource-card:hover, .scam-resource-card:focus-visible { transform: translateY(-3px); border-color: rgba(0, 229, 242, .7); box-shadow: 0 15px 35px rgba(0, 0, 0, .24); outline: none; }
+.scam-resource-card > span { color: var(--cyan); font-size: .58rem; font-weight: 700; letter-spacing: .12em; }
+.scam-resource-card strong { margin-top: 15px; font: 500 1.45rem "Barlow Condensed", sans-serif; letter-spacing: .025em; }
+.scam-resource-card p { margin: 10px 0 22px; color: #91aab7; font-size: .78rem; line-height: 1.55; }
+.scam-resource-card small { margin-top: auto; color: #e676bd; font-size: .61rem; font-weight: 700; letter-spacing: .09em; }
+.scam-resource-card i { font-style: normal; }
+.urgent-scam-advice { margin-bottom: 16px; padding: 18px 20px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255, 166, 67, .5); background: rgba(133, 76, 14, .13); }
+.urgent-scam-advice > span { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border: 1px solid #ffad4e; border-radius: 50%; color: #ffc06f; font-size: 1.3rem; }
+.urgent-scam-advice strong { color: #ffd69b; font-size: .77rem; letter-spacing: .09em; }
+.urgent-scam-advice p { margin: 5px 0 0; color: #bea98c; font-size: .76rem; line-height: 1.5; }
+.scam-report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.scam-report-card { min-height: 175px; padding: 20px; display: flex; flex-direction: column; border-left: 3px solid var(--pink); background: rgba(34, 15, 39, .5); transition: background .2s; }
+.scam-report-card:hover, .scam-report-card:focus-visible { background: rgba(69, 20, 57, .58); outline: 1px solid rgba(245, 91, 182, .45); }
+.scam-report-card strong { font: 500 1.3rem "Barlow Condensed", sans-serif; }
+.scam-report-card p { margin: 9px 0 18px; color: #9cabb5; font-size: .76rem; line-height: 1.5; }
+.scam-report-card small { margin-top: auto; color: #6eeaf5; font-size: .6rem; font-weight: 700; letter-spacing: .08em; }
+.scam-report-card i { font-style: normal; }
+.learn-scams-footer { padding: 28px 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 25px; border-top: 1px solid rgba(0, 229, 242, .2); }
+.learn-scams-footer p { max-width: 620px; margin: 0; color: #718b9a; font-size: .7rem; }
+.learn-scams-footer div { display: flex; gap: 8px; }
+.learn-scams-footer a { padding: 11px 15px; border: 1px solid rgba(0, 229, 242, .45); color: #a4e9f0; font-size: .65rem; font-weight: 700; letter-spacing: .07em; }
+.learn-scams-footer a:last-child { color: #fff; border-color: #167cff; background: linear-gradient(100deg, #075ad2, #08a7d2); }
+
+@media (max-width: 850px) {
+  .scam-resource-grid, .scam-report-grid { grid-template-columns: repeat(2, 1fr); }
+  .stop-check-protect { grid-template-columns: 1fr; }
+  .stop-check-protect article { border-right: 0; border-bottom: 1px solid rgba(0, 229, 242, .19); }
+  .stop-check-protect article:last-child { border-bottom: 0; }
+}
+
+@media (max-width: 560px) {
+  .learn-scams { padding-inline: 14px; }
+  .learn-scams-brand span { max-width: 190px; }
+  .learn-scams-home { padding: 10px; font-size: .6rem; }
+  .scam-resource-grid, .scam-report-grid { grid-template-columns: 1fr; }
+  .learn-scams-footer { align-items: stretch; flex-direction: column; }
+  .learn-scams-footer div { display: grid; grid-template-columns: 1fr 1fr; text-align: center; }
+}

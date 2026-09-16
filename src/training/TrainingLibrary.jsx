@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import EmailPhishingModule from './phishing/EmailPhishingModule.jsx'
 import SmsPhishingModule from './phishing/SmsPhishingModule.jsx'
 import VishingModule from './phishing/VishingModule.jsx'
+import VoiceCloneModule from './deepfake/VoiceCloneModule.jsx'
 import { learningModuleCatalog } from './trainingRegistry.js'
 import './TrainingModules.css'
 
@@ -32,6 +33,7 @@ const TrainingLibrary = forwardRef(function TrainingLibrary({ completedModuleIds
     email: completedModuleIds.has('email'),
     sms: completedModuleIds.has('sms'),
     vishing: completedModuleIds.has('vishing'),
+    'voice-clone': completedModuleIds.has('voice-clone'),
   }
   const completedLearningModules = Object.values(learningModuleCompletion).filter(Boolean).length
   const availableLearningModules = learningModuleCatalog.filter((module) => module.available).length
@@ -131,6 +133,7 @@ const TrainingLibrary = forwardRef(function TrainingLibrary({ completedModuleIds
       {activeModuleId === 'email' && <EmailPhishingModule completed={completedModuleIds.has('email')} onComplete={() => completeModule('email')} onClose={closeModule} />}
       {activeModuleId === 'sms' && <SmsPhishingModule completed={completedModuleIds.has('sms')} onComplete={() => completeModule('sms')} onClose={closeModule} />}
       {activeModuleId === 'vishing' && <VishingModule completed={completedModuleIds.has('vishing')} onComplete={() => completeModule('vishing')} onClose={closeModule} onAudioChange={onAudioChange} />}
+      {activeModuleId === 'voice-clone' && <VoiceCloneModule completed={completedModuleIds.has('voice-clone')} onComplete={() => completeModule('voice-clone')} onClose={closeModule} />}
     </>
   )
 })
