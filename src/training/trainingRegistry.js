@@ -6,6 +6,7 @@ export const attackTrainingRequirements = {
   },
   deepfake: {
     voice: 'voice-clone',
+    video:'video-deepfake'
   },
 }
 
@@ -53,6 +54,6 @@ export const learningModuleCatalog = [
   {
     id: 'video-deepfake', number: '09', category: 'DEEPFAKE', theme: 'deepfake', icon: '◉', title: 'Video / Image Deepfake',
     description: 'Examine synthetic visual media, misleading context and safer ways to verify high-impact requests.',
-    format: 'Module in development', available: false,
+    format: 'Module in development', available: true,
   },
 ]
