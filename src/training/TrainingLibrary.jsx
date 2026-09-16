@@ -37,7 +37,12 @@ const TrainingLibrary = forwardRef(function TrainingLibrary({ completedModuleIds
     email: completedModuleIds.has('email'),
     sms: completedModuleIds.has('sms'),
     vishing: completedModuleIds.has('vishing'),
+    teams: completedModuleIds.has('teams'),
+    facebook: completedModuleIds.has('facebook'),
+    instagram: completedModuleIds.has('instagram'),
+    linkedin: completedModuleIds.has('linkedin'),
     'voice-clone': completedModuleIds.has('voice-clone'),
+    'video-deepfake': completedModuleIds.has('video-deepfake'),
   }
   const completedLearningModules = Object.values(learningModuleCompletion).filter(Boolean).length
   const availableLearningModules = learningModuleCatalog.filter((module) => module.available).length

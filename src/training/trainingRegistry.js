@@ -8,6 +8,11 @@ export const attackTrainingRequirements = {
     voice: 'voice-clone',
     video:'video-deepfake'
   },
+  social: {
+    facebook: 'facebook',
+    instagram: 'instagram',
+    linkedin: 'linkedin',
+  },
 }
 
 export const learningModuleCatalog = [
