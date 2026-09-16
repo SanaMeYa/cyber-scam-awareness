@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import VoiceCloneRecorder from './VoiceCloneRecorder.jsx'
 import { generateVoiceClone, VoiceCloneServiceError } from './voiceCloneService.js'
-import fallbackVoiceCloneUrl from './fallback-voice-clone.wav'
 import './voice-clone-demo.css'
 
 const MAX_GENERATION_CHARACTERS = 140
 const GENERATION_TIMEOUT_MS = 90000
-const FALLBACK_TRANSCRIPT = 'Please verify this request through an official company channel before taking action.'
 
 const suggestedSentences = [
   'Please transfer the payment before the meeting begins.',
@@ -25,7 +23,6 @@ function VoiceCloneDemo({
   const [generatedUrl, setGeneratedUrl] = useState('')
   const [text, setText] = useState(suggestedSentences[0])
   const [generationState, setGenerationState] = useState('idle')
-  const [generationSource, setGenerationSource] = useState('personal')
   const [errorMessage, setErrorMessage] = useState('')
 
   const referenceUrlRef = useRef('')
@@ -43,7 +40,6 @@ function VoiceCloneDemo({
     revokeUrl(generatedUrlRef)
     setGeneratedUrl('')
     setGenerationState('idle')
-    setGenerationSource('personal')
     setErrorMessage('')
   }
 
@@ -97,22 +93,18 @@ function VoiceCloneDemo({
       const nextUrl = URL.createObjectURL(audioBlob)
       generatedUrlRef.current = nextUrl
       setGeneratedUrl(nextUrl)
-      setGenerationSource('personal')
       setGenerationState('complete')
       setStage('result')
     } catch (error) {
       if (error?.name === 'AbortError' && !generationTimedOut) return
       setErrorMessage(
         generationTimedOut
-          ? 'The local model did not respond within 90 seconds. You can try again or delete the recording and continue without the demonstration.'
+          ? 'The model did not respond within 90 seconds. Check GPU and CPU compatibility, or try again later.'
           : error instanceof VoiceCloneServiceError
-          ? error.message
-          : 'Voice generation could not be completed. Please try again.',
+          ? `${error.message} Check GPU and CPU compatibility, or try again later.`
+          : 'Model generation is unavailable at this time. Check GPU and CPU compatibility, or try again later.',
       )
-      setGeneratedUrl(fallbackVoiceCloneUrl)
-      setGenerationSource('fallback')
-      setGenerationState('complete')
-      setStage('result')
+      setGenerationState('error')
     } finally {
       window.clearTimeout(timeoutId)
       if (generationControllerRef.current === controller) {
@@ -145,30 +137,19 @@ function VoiceCloneDemo({
     return (
       <section className="voice-demo-card" aria-labelledby="voice-result-title">
         <div className="voice-demo-kicker">VOICE-CLONE DEMONSTRATION // RESULT</div>
-        <h2 id="voice-result-title">{generationSource === 'personal' ? 'You never recorded those words' : 'Live generation was unavailable'}</h2>
-        <p>
-          {generationSource === 'personal'
-            ? 'The generated clip used characteristics from your temporary reference sample to produce a sentence you did not speak.'
-            : 'The module has continued with a pre-generated fictional example. Your temporary recording was not used to create this example.'}
-        </p>
-
-        {generationSource === 'fallback' && (
-          <div className="voice-fallback-notice" role="status">
-            <strong>PRE-GENERATED FALLBACK ACTIVE</strong>
-            <p>{errorMessage} You can still complete the lesson normally.</p>
-          </div>
-        )}
+        <h2 id="voice-result-title">You never recorded those words</h2>
+        <p>The generated clip used characteristics from your temporary reference sample to produce a sentence you did not speak.</p>
 
         <div className="voice-audio-comparison">
           <article>
-            <span>01 // {generationSource === 'personal' ? 'ORIGINAL' : 'YOUR RECORDING'}</span>
-            <h3>{generationSource === 'personal' ? 'Your reference recording' : 'Not used for fallback audio'}</h3>
+            <span>01 // ORIGINAL</span>
+            <h3>Your reference recording</h3>
             <audio controls src={referenceUrl}>Original voice recording</audio>
           </article>
           <article className="generated">
-            <span>02 // {generationSource === 'personal' ? 'GENERATED' : 'FICTIONAL EXAMPLE'}</span>
-            <h3>{generationSource === 'personal' ? 'Words you typed' : 'Bundled example clone'}</h3>
-            <blockquote>“{generationSource === 'personal' ? text : FALLBACK_TRANSCRIPT}”</blockquote>
+            <span>02 // GENERATED</span>
+            <h3>Words you typed</h3>
+            <blockquote>“{text}”</blockquote>
             <audio controls src={generatedUrl}>Generated voice-clone audio</audio>
           </article>
         </div>
@@ -245,18 +226,21 @@ function VoiceCloneDemo({
 
       {generationState === 'error' && (
         <div className="voice-generation-error" role="alert">
-          <strong>LOCAL GENERATOR NOT AVAILABLE</strong>
+          <strong>MODEL GENERATION UNAVAILABLE</strong>
           <p>{errorMessage}</p>
-          <small>The temporary reference sample is still held only in this browser tab.</small>
+          <small>No replacement audio will be played. Your temporary reference sample is still held only in this browser tab.</small>
         </div>
       )}
 
       <div className="voice-demo-actions">
         <button className="voice-demo-primary" type="button" disabled={!text.trim() || generationState === 'generating'} onClick={requestGeneration}>
-          {generationState === 'generating' ? 'GENERATING…' : 'GENERATE TEMPORARY AUDIO'}
+          {generationState === 'generating' ? 'GENERATING…' : generationState === 'error' ? 'TRY GENERATION AGAIN' : 'GENERATE TEMPORARY AUDIO'}
         </button>
+        {generationState === 'error' && (
+          <button className="voice-demo-secondary" type="button" onClick={skipActivity}>DELETE AUDIO AND CONTINUE MODULE</button>
+        )}
         <button className="voice-demo-secondary" type="button" disabled={generationState === 'generating'} onClick={returnToRecorder}>RE-RECORD VOICE</button>
-        <button className="voice-demo-text" type="button" onClick={skipActivity}>{generationState === 'generating' ? 'CANCEL GENERATION AND SKIP' : 'DELETE AND SKIP'}</button>
+        {generationState !== 'error' && <button className="voice-demo-text" type="button" onClick={skipActivity}>{generationState === 'generating' ? 'CANCEL GENERATION AND SKIP' : 'DELETE AND SKIP'}</button>}
       </div>
 
       <p className="voice-local-note"><span aria-hidden="true">▣</span>No third-party generation service is configured.</p>

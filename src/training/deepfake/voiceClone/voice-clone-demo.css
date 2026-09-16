@@ -58,9 +58,6 @@
 .voice-audio-comparison h3 { margin: 8px 0 18px; }
 .voice-audio-comparison audio { width: 100%; }
 .voice-audio-comparison blockquote { min-height: 82px; margin: 0 0 18px; color: #dfeff6; line-height: 1.5; }
-.voice-fallback-notice { margin: 18px 0; padding: 15px 18px; border: 1px solid rgba(90, 218, 242, .4); border-left: 4px solid #51d9f2; border-radius: 8px; background: rgba(17, 92, 112, .14); }
-.voice-fallback-notice strong { color: #68e4f8; }
-.voice-fallback-notice p { margin: 5px 0 0; color: #98bbc7; line-height: 1.5; }
 .voice-capability-note { margin-bottom: 12px; padding: 17px 19px; border: 1px solid rgba(255, 100, 190, .36); border-left: 4px solid #ff64be; border-radius: 8px; background: rgba(96, 21, 77, .14); }
 .voice-capability-note strong { color: #ff91d2; }
 .voice-capability-note p { margin: 5px 0 0; color: #bda4b5; line-height: 1.5; }
