@@ -13,6 +13,7 @@ import TrainingLibrary from './training/TrainingLibrary.jsx'
 import useTrainingProgress from './training/useTrainingProgress.js'
 import { attackTrainingRequirements, learningModuleCatalog } from './training/trainingRegistry.js'
 import { getPreferredNarrationVoice } from './training/narrationVoices.js'
+import HowToPlay from './pages/HowToPlay.jsx'
 
 // Scenario/briefing narration is generated live per selected target (the text
 // is dynamic, not a fixed script), so it uses Kokoro TTS directly in the
@@ -248,7 +249,7 @@ function Gameplay() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const trainingLibraryRef = useRef(null)
   const [trainingAudioPlaying, setTrainingAudioPlaying] = useState(false)
-  const { completedModuleIds, completeModule, isModuleComplete } = useTrainingProgress()
+  const { completedModuleIds, completeModule, isModuleComplete, resetProgress } = useTrainingProgress()
   const [selectedTargetId, setSelectedTargetId] = useState('jordan')
   const [selectedTechnique, setSelectedTechnique] = useState('')
   const [subtypes, setSubtypes] = useState({ phishing: 'email', social: 'linkedin', deepfake: 'voice' })
@@ -269,6 +270,7 @@ function Gameplay() {
   const clickAudioContextRef = useRef(null)
   const idleWarningOpenRef = useRef(false)
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
+  const [pendingLeaveAction, setPendingLeaveAction] = useState(null) // 'home' | 'restart' | null
   const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(idleReturnDelay / 1000)
   const [idleSessionKey, setIdleSessionKey] = useState(0)
   const narrationAudioRef = useRef(null)
@@ -448,6 +450,17 @@ function Gameplay() {
   }, [audioSettings.soundEffectsEnabled, audioSettings.soundEffectsVolume])
 
   useEffect(() => {
+    if (!pendingLeaveAction) return undefined
+
+    const cancelOnEscape = (event) => {
+      if (event.key === 'Escape') setPendingLeaveAction(null)
+    }
+
+    window.addEventListener('keydown', cancelOnEscape)
+    return () => window.removeEventListener('keydown', cancelOnEscape)
+  }, [pendingLeaveAction])
+
+  useEffect(() => {
     if (!settingsOpen) return undefined
 
     const closeOnEscape = (event) => {
@@ -471,7 +484,7 @@ function Gameplay() {
     let returnTimer
     let countdownTimer
 
-    const returnToHome = () => navigate('/', { replace: true })
+    const returnToHome = () => { resetProgress(); navigate('/', { replace: true }) }
 
     const showIdleWarning = () => {
       idleWarningOpenRef.current = true
@@ -735,6 +748,7 @@ function Gameplay() {
 
   const resetGame = () => {
     stopNarration()
+    resetProgress()
     setSelectedTargetId('jordan'); setSelectedTechnique(''); setFunds(startingFunds)
     setExposure(0); setTurn(0); setEmployeeCleared(false); setManagerCleared(false)
     setSuccessfulTargetIds(new Set())
@@ -879,6 +893,19 @@ function Gameplay() {
   }
   const fundsPercent = (funds / startingFunds) * 100
 
+  // HOME and RESTART both discard the run, so they ask first. The idle warning's
+  // own RETURN HOME button and the idle auto-return skip this on purpose.
+  const confirmLeaveAction = () => {
+    const action = pendingLeaveAction
+    setPendingLeaveAction(null)
+    if (action === 'home') {
+      resetProgress()
+      returnHome()
+    }
+    if (action === 'restart') resetGame()
+  }
+
+  const [howToPlayOpen, setHowToPlayOpen] = useState(false)
   return (
     <main className="game-page">
       <audio ref={musicRef} src="/audio/max-brhon-cyberpunk.mp3" preload="metadata" />
@@ -902,17 +929,17 @@ function Gameplay() {
               onAudioChange={setTrainingAudioPlaying}
               onBeforeModuleOpen={stopNarration}
             />
-            <button className="utility-button" type="button" onClick={returnHome}>
+            <button className="utility-button" type="button" onClick={() => setPendingLeaveAction('home')}>
               <span className="navigation-icon" aria-hidden="true">⌂</span> HOME
             </button>
-            <button className="utility-button" type="button" onClick={() => navigate('/how-to-play')}>
+            <button className="utility-button" type="button" onClick={() => { stopNarration(); setHowToPlayOpen(true) }}>
               <span className="navigation-icon help-icon" aria-hidden="true">?</span> HOW TO PLAY
             </button>
             <button className="utility-button" type="button" onClick={openAudioSettings} aria-haspopup="dialog">
               <span className="settings-icon">⚙</span> SETTINGS
               <span className={`audio-status-dot ${audioSettings.musicEnabled ? 'active' : ''}`} aria-label={`Music ${audioSettings.musicEnabled ? 'on' : 'off'}`} />
             </button>
-            <button className="utility-button" type="button" onClick={resetGame}><span className="restart-icon">↻</span> RESTART</button>
+            <button className="utility-button" type="button" onClick={() => setPendingLeaveAction('restart')}><span className="restart-icon">↻</span> RESTART</button>
           </div>
         </header>
 
@@ -1170,6 +1197,42 @@ function Gameplay() {
             <footer className="settings-modal-footer idle-modal-actions">
               <button className="settings-cancel" type="button" onClick={returnHome}>RETURN HOME</button>
               <button className="settings-save" type="button" onClick={continueAfterIdle} autoFocus>CONTINUE SESSION</button>
+            </footer>
+          </section>
+        </div>
+      )}
+      {howToPlayOpen && (
+        <div className="htp-overlay" role="dialog" aria-modal="true" aria-label="How to play">
+          <HowToPlay onClose={() => setHowToPlayOpen(false)} />
+        </div>
+      )}
+
+      {pendingLeaveAction && (
+        <div className="settings-backdrop idle-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setPendingLeaveAction(null)
+        }}>
+          <section className="settings-modal idle-modal" role="alertdialog" aria-modal="true" aria-labelledby="leave-warning-title" aria-describedby="leave-warning-description">
+            <header className="settings-modal-header">
+              <div>
+                <span className="section-kicker">WARNING // PROGRESS WILL BE LOST</span>
+                <h2 id="leave-warning-title">{pendingLeaveAction === 'home' ? 'RETURN TO HOME?' : 'RESTART THE GAME?'}</h2>
+              </div>
+            </header>
+            <div className="idle-modal-content">
+              <p id="leave-warning-description">
+                {pendingLeaveAction === 'home'
+                  ? 'Leaving now will end your current game. All progress will be lost.'
+                  : 'Restarting will reset the simulation. All progress will be lost.'}
+              </p>
+              <p>Are you sure you want to continue?</p>
+            </div>
+            <footer className="settings-modal-footer idle-modal-actions">
+              <button className="settings-cancel" type="button" onClick={confirmLeaveAction}>
+                {pendingLeaveAction === 'home' ? 'YES, GO HOME' : 'YES, RESTART'}
+              </button>
+              <button className="settings-save" type="button" onClick={() => setPendingLeaveAction(null)} autoFocus>
+                KEEP PLAYING
+              </button>
             </footer>
           </section>
         </div>

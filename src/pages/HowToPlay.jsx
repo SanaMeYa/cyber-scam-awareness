@@ -229,7 +229,7 @@ function StepVisual({ type }) {
   )
 }
 
-export default function HowToPlay() {
+export default function HowToPlay({ onClose }) {
   const [activeStep, setActiveStep] = useState(0)
   const step = steps[activeStep]
 
@@ -254,10 +254,17 @@ export default function HowToPlay() {
           <strong>{activeStep + 1} / {steps.length}</strong>
         </div>
 
-        <Link className="htp-back-button" to="/">
-          <Icon type="back" />
-          Back to home
-        </Link>
+        {onClose ? (
+          <button className="htp-back-button" type="button" onClick={onClose}>
+            <Icon type="back" />
+            Back to game
+          </button>
+        ) : (
+          <Link className="htp-back-button" to="/">
+            <Icon type="back" />
+            Back to home
+          </Link>
+        )}
       </header>
 
       <section className="htp-intro" aria-labelledby="how-to-play-title">
