@@ -19,6 +19,14 @@ function saveSessionLearningProgress(moduleIds) {
   }
 }
 
+export function clearSessionLearningProgress() {
+  try {
+    window.sessionStorage.removeItem(learningProgressSessionKey)
+  } catch {
+    // Storage unavailable — nothing to clear.
+  }
+}
+
 export default function useTrainingProgress() {
   const [completedModuleIds, setCompletedModuleIds] = useState(() => new Set(readSessionLearningProgress()))
 
@@ -34,5 +42,11 @@ export default function useTrainingProgress() {
 
   const isModuleComplete = useCallback((moduleId) => completedModuleIds.has(moduleId), [completedModuleIds])
 
-  return { completedModuleIds, completeModule, isModuleComplete }
+  const resetProgress = useCallback(() => {
+    clearSessionLearningProgress()
+    setCompletedModuleIds(new Set())
+  }, [])
+
+
+  return { completedModuleIds, completeModule, isModuleComplete, resetProgress }
 }
