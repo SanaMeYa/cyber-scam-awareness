@@ -3,6 +3,7 @@ export const attackTrainingRequirements = {
     email: 'email',
     sms: 'sms',
     vishing: 'vishing',
+    teams: 'teams',
   },
   deepfake: {
     voice: 'voice-clone',
@@ -33,8 +34,8 @@ export const learningModuleCatalog = [
   },
   {
     id: 'teams', number: '04', category: 'PHISHING', theme: 'phishing', icon: '◫', title: 'Teams / Slack Phishing',
-    description: 'Learn how fraudulent direct messages, external accounts and malicious collaboration links imitate coworkers.',
-    format: 'Module in development', available: false,
+    description: 'Investigate realistic workplace DMs, trace how collaboration phishing creates business damage and practise controlling a live impersonation attempt.',
+    format: '4 interactive activities', available: true,
   },
   {
     id: 'facebook', number: '05', category: 'FAKE SOCIAL PROFILE', theme: 'social', icon: 'f', title: 'Facebook Impersonation',

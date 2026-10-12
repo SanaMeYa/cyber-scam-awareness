@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import EmailPhishingModule from './phishing/EmailPhishingModule.jsx'
 import SmsPhishingModule from './phishing/SmsPhishingModule.jsx'
 import VishingModule from './phishing/VishingModule.jsx'
+import TeamsPhishingModule from './phishing/TeamsPhishingModule.jsx'
 import VoiceCloneModule from './deepfake/VoiceCloneModule.jsx'
 import VideoDeepfakeModule from './deepfake/VideoDeepfakeModule.jsx'
 import FacebookModule from './social/FacebookModule.jsx'
@@ -142,6 +143,7 @@ const TrainingLibrary = forwardRef(function TrainingLibrary({ completedModuleIds
       {activeModuleId === 'email' && <EmailPhishingModule completed={completedModuleIds.has('email')} onComplete={() => completeModule('email')} onClose={closeModule} />}
       {activeModuleId === 'sms' && <SmsPhishingModule completed={completedModuleIds.has('sms')} onComplete={() => completeModule('sms')} onClose={closeModule} />}
       {activeModuleId === 'vishing' && <VishingModule completed={completedModuleIds.has('vishing')} onComplete={() => completeModule('vishing')} onClose={closeModule} onAudioChange={onAudioChange} />}
+      {activeModuleId === 'teams' && <TeamsPhishingModule completed={completedModuleIds.has('teams')} onComplete={() => completeModule('teams')} onClose={closeModule} />}
       {activeModuleId === 'voice-clone' && <VoiceCloneModule completed={completedModuleIds.has('voice-clone')} onComplete={() => completeModule('voice-clone')} onClose={closeModule} />}
       {activeModuleId === 'video-deepfake' && <VideoDeepfakeModule completed={completedModuleIds.has('video-deepfake')} onComplete={() => completeModule('video-deepfake')} onClose={closeModule} />}
       {activeModuleId === 'facebook' && <FacebookModule completed={completedModuleIds.has('facebook')} onComplete={() => completeModule('facebook')} onClose={closeModule} />}
