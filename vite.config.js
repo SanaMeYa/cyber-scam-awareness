@@ -6,5 +6,8 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['kokoro-js', '@huggingface/transformers', 'onnxruntime-web'],
+  worker: {
+    format: 'es',
+  },
   },
 })
