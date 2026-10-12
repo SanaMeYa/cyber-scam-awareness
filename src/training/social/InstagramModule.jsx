@@ -1,18 +1,20 @@
 import SocialTrainingModule from './SocialTrainingModule.jsx'
 import {
-  instagramComparisonExamples,
   instagramInspectionExamples,
+  instagramResponseScenario,
   instagramSummaryData,
+  instagramVerificationChallenges,
 } from './instagramData.js'
 
 export default function InstagramModule({ completed, onComplete, onClose }) {
   return (
     <SocialTrainingModule
       platform="instagram"
-      kicker="MODULE 06 // FAKE INSTAGRAM & DM PHISHING"
-      title="INSTAGRAM SCAMS & 2FA HIJACKING AWARENESS"
+      kicker="MODULE 06 // FAKE PROFILE & ACCOUNT DEFENCE"
+      title="INSTAGRAM IDENTITY & ACCOUNT TAKEOVER DEFENCE"
       inspectionExamples={instagramInspectionExamples}
-      comparisonExamples={instagramComparisonExamples}
+      verificationChallenges={instagramVerificationChallenges}
+      responseScenario={instagramResponseScenario}
       summaryData={instagramSummaryData}
       completed={completed}
       onComplete={onComplete}

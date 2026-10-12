@@ -1,543 +1,384 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import './SocialTrainingModule.css'
+
+const platformUi = {
+  facebook: {
+    mark: 'f', name: 'Facebook', surface: 'Messenger',
+    navigation: ['Home', 'Friends', 'Marketplace', 'Messages'],
+    reportPath: 'Profile menu → Find support or report',
+  },
+  instagram: {
+    mark: '◎', name: 'Instagram', surface: 'Direct messages',
+    navigation: ['Home', 'Explore', 'Reels', 'Messages'],
+    reportPath: 'Profile menu → Report → Pretending to be someone',
+  },
+  linkedin: {
+    mark: 'in', name: 'LinkedIn', surface: 'Messaging',
+    navigation: ['Home', 'My Network', 'Jobs', 'Messaging'],
+    reportPath: 'Profile More menu → Report or block',
+  },
+}
+
+const stageLabels = [
+  ['01', 'PROFILE FORENSICS'],
+  ['02', 'VERIFY THE IDENTITY'],
+  ['03', 'CONTROL THE OUTCOME'],
+  ['04', 'FIELD SUMMARY'],
+]
+
+function ShieldIcon({ checked = false }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3 20 6v6c0 5-3.2 8.1-8 10-4.8-1.9-8-5-8-10V6l8-3Z" />
+      {checked && <path d="m8.5 12 2.3 2.3 4.9-5" />}
+    </svg>
+  )
+}
+
+function ProfileAvatar({ example }) {
+  return (
+    <span
+      className="social-profile-avatar"
+      style={{ '--avatar-background': example.avatarBg, '--avatar-color': example.avatarColor }}
+      aria-hidden="true"
+    >
+      {example.avatar}
+    </span>
+  )
+}
+
+function PlatformProfile({ platform, example, revealedClues, onReveal }) {
+  const ui = platformUi[platform]
+  const stats = example.stats
+
+  return (
+    <article className={`social-platform-window social-platform-${platform}`}>
+      <header className="social-network-bar">
+        <span className="social-network-mark" aria-hidden="true">{ui.mark}</span>
+        <label>
+          <span className="sr-only">Search {ui.name}</span>
+          <input value={`Search ${ui.name}`} readOnly tabIndex="-1" aria-hidden="true" />
+        </label>
+        <nav aria-label={`${ui.name} preview navigation`}>
+          {ui.navigation.map((item, index) => <span className={index === 3 ? 'active' : ''} key={item}>{item}</span>)}
+        </nav>
+      </header>
+
+      <div className="social-profile-cover" aria-hidden="true"><span>PUBLIC PROFILE // CASE PREVIEW</span></div>
+
+      <section className="social-profile-identity">
+        <ProfileAvatar example={example} />
+        <div>
+          <h4>{example.profileName}{example.verifiedBadge && <span className="social-verified-badge" title="Verified profile">✓</span>}</h4>
+          <p>{example.handle}</p>
+          <small>{example.meta}</small>
+        </div>
+        <button type="button" tabIndex="-1" aria-hidden="true">{platform === 'linkedin' ? 'Connect' : 'Message'}</button>
+      </section>
+
+      {(stats || example.roleHighlight || example.mutualFriends) && (
+        <div className="social-profile-facts">
+          {stats && <><span><strong>{stats.posts}</strong> posts</span><span><strong>{stats.followers}</strong> followers</span><span><strong>{stats.following}</strong> following</span></>}
+          {example.roleHighlight && <span className="wide"><strong>Claimed role</strong>{example.roleHighlight}</span>}
+          {example.mutualFriends && <span className="wide"><strong>Network</strong>{example.mutualFriends}</span>}
+        </div>
+      )}
+
+      <div className="social-message-area">
+        <header><ProfileAvatar example={example} /><div><strong>{example.profileName}</strong><span>{example.onlineStatus || ui.surface}</span></div></header>
+        <div className="social-message-thread">
+          {example.chatHistory?.map((message, index) => (
+            <div className="social-message" key={`${message.time}-${index}`}><p>{message.text}</p><span>{message.time}</span></div>
+          ))}
+        </div>
+      </div>
+
+      <section className="social-evidence-layer" aria-label="Suspicious profile evidence">
+        <header><div><span className="social-live-dot" /> EVIDENCE SCAN ACTIVE</div><small>Tap every suspicious detail</small></header>
+        <div>
+          {example.hotspots.map((clue, index) => {
+            const found = revealedClues.includes(clue.id)
+            return (
+              <button className={found ? 'found' : ''} type="button" key={clue.id} onClick={() => onReveal(clue.id)} aria-pressed={found}>
+                <span>{found ? '✓' : String(index + 1).padStart(2, '0')}</span>
+                <div><small>{clue.label}</small><strong>“{clue.targetText}”</strong></div>
+                <em>{found ? 'ANALYSED' : 'INSPECT'}</em>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+    </article>
+  )
+}
+
+function FindingPanel({ example, revealedClues }) {
+  const activeFinding = example.hotspots.find((clue) => clue.id === revealedClues.at(-1))
+
+  return (
+    <aside className="social-findings-panel">
+      <div className="social-risk-dial" style={{ '--risk-progress': `${(revealedClues.length / Math.max(1, example.hotspots.length)) * 360}deg` }}>
+        <div><strong>{revealedClues.length}</strong><span>OF {example.hotspots.length}</span></div>
+      </div>
+      <div className="social-findings-heading">
+        <small>CASE FINDINGS</small>
+        <h4>{revealedClues.length === example.hotspots.length ? 'Profile deception exposed' : 'Build the evidence picture'}</h4>
+        <p>{revealedClues.length === example.hotspots.length
+          ? 'You found every warning sign in this profile. Finish the remaining cases to continue.'
+          : 'A single detail may be harmless. Several inconsistencies together form a reliable warning pattern.'}</p>
+      </div>
+
+      {activeFinding ? (
+        <article className="social-active-finding" key={activeFinding.id}>
+          <span>NEW FINDING</span><h5>{activeFinding.title}</h5><p>{activeFinding.explanation}</p>
+          <div><strong>SAFER MOVE</strong>{activeFinding.teenTip}</div>
+        </article>
+      ) : (
+        <div className="social-empty-finding"><span aria-hidden="true">⌖</span><p>Select a pulsing evidence item inside the profile preview.</p></div>
+      )}
+
+      <div className="social-case-checklist">
+        {example.hotspots.map((clue) => (
+          <span className={revealedClues.includes(clue.id) ? 'found' : ''} key={clue.id}>
+            <i>{revealedClues.includes(clue.id) ? '✓' : '○'}</i>{clue.label}
+          </span>
+        ))}
+      </div>
+    </aside>
+  )
+}
 
 export default function SocialTrainingModule({
-  platform,
-  kicker,
-  title,
-  inspectionExamples,
-  comparisonExamples,
-  summaryData,
-  completed,
-  onComplete,
-  onClose,
+  platform, kicker, title, inspectionExamples, verificationChallenges,
+  responseScenario, summaryData, completed, onComplete, onClose,
 }) {
   const [step, setStep] = useState(0)
   const [currentExampleIndex, setCurrentExampleIndex] = useState(0)
   const [revealedClues, setRevealedClues] = useState({})
-  const [comparisonAnswers, setComparisonAnswers] = useState({})
-  const [activeSimulationPath, setActiveSimulationPath] = useState('trap')
+  const [verificationIndex, setVerificationIndex] = useState(0)
+  const [verificationAnswers, setVerificationAnswers] = useState({})
+  const [verificationPassed, setVerificationPassed] = useState([])
+  const [responseTurn, setResponseTurn] = useState(0)
+  const [responseAnswers, setResponseAnswers] = useState({})
+  const [simulationFinished, setSimulationFinished] = useState(false)
   const contentRef = useRef(null)
+  const ui = platformUi[platform]
 
   useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onClose()
-    }
+    const handleKeyDown = (event) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0
-    }
-  }, [step])
+  useEffect(() => { contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }, [step])
 
-  const currentExample = inspectionExamples[currentExampleIndex] || inspectionExamples[0]
-  const currentHotspots = currentExample?.hotspots || []
-  const exampleRevealed = revealedClues[currentExample?.id] || []
+  const currentExample = inspectionExamples[currentExampleIndex] ?? inspectionExamples[0]
+  const currentRevealed = revealedClues[currentExample.id] ?? []
+  const totalClues = inspectionExamples.reduce((total, example) => total + example.hotspots.length, 0)
+  const foundClues = Object.values(revealedClues).reduce((total, ids) => total + ids.length, 0)
+  const allCluesFound = foundClues === totalClues
+  const currentVerification = verificationChallenges[verificationIndex] ?? verificationChallenges[0]
+  const currentVerificationAnswer = verificationAnswers[currentVerification.id]
+  const currentVerificationPassed = verificationPassed.includes(currentVerification.id)
+  const currentResponse = responseScenario.turns[responseTurn]
+  const currentResponseAnswer = currentResponse ? responseAnswers[currentResponse.id] : null
+  const allResponsesMade = Object.keys(responseAnswers).length === responseScenario.turns.length
 
-  const currentScamPercent = Math.round(
-    (exampleRevealed.length / Math.max(1, currentHotspots.length)) * 100
+  const safeResponseCount = useMemo(() => responseScenario.turns.reduce((total, turn) => {
+    const option = turn.options.find((item) => item.id === responseAnswers[turn.id])
+    return total + (option?.risk === 0 ? 1 : 0)
+  }, 0), [responseAnswers, responseScenario.turns])
+
+  const score = Math.round(
+    (foundClues / Math.max(1, totalClues)) * 40
+    + (verificationPassed.length / Math.max(1, verificationChallenges.length)) * 30
+    + (safeResponseCount / Math.max(1, responseScenario.turns.length)) * 30
   )
 
-  const canAdvance = useMemo(() => {
-    if (step === 0) {
-      return exampleRevealed.length === currentHotspots.length
-    }
-    if (step === 1) {
-      return comparisonExamples.every((comp) => comparisonAnswers[comp.id] === comp.correct)
-    }
-    return true
-  }, [step, exampleRevealed.length, currentHotspots.length, comparisonAnswers, comparisonExamples])
+  const exposure = responseScenario.turns.reduce((total, turn) => {
+    const option = turn.options.find((item) => item.id === responseAnswers[turn.id])
+    return total + (option?.risk ?? 0)
+  }, 0)
+
+  const canAdvance = step === 0 ? allCluesFound
+    : step === 1 ? verificationPassed.length === verificationChallenges.length
+      : step === 2 ? simulationFinished : true
 
   const revealClue = (clueId) => {
-    if (!currentExample) return
-    setRevealedClues((prev) => {
-      const existing = prev[currentExample.id] || []
-      if (existing.includes(clueId)) return prev
-      return {
-        ...prev,
-        [currentExample.id]: [...existing, clueId],
-      }
+    setRevealedClues((current) => {
+      const existing = current[currentExample.id] ?? []
+      return existing.includes(clueId) ? current : { ...current, [currentExample.id]: [...existing, clueId] }
     })
   }
 
-  const handleComparisonChoice = (comparisonId, choice) => {
-    setComparisonAnswers((prev) => ({
-      ...prev,
-      [comparisonId]: choice,
-    }))
-  }
-
-  const advance = () => {
-    if (step < 3) {
-      setStep((current) => current + 1)
-      return
+  const chooseVerificationAnswer = (optionId) => {
+    if (currentVerificationPassed) return
+    setVerificationAnswers((current) => ({ ...current, [currentVerification.id]: optionId }))
+    if (optionId === currentVerification.correct) {
+      setVerificationPassed((current) => current.includes(currentVerification.id) ? current : [...current, currentVerification.id])
     }
-    onComplete()
-    onClose()
   }
 
-  const back = () => {
-    if (step > 0) setStep((current) => current - 1)
+  const chooseResponse = (optionId) => {
+    if (!currentResponse || currentResponseAnswer) return
+    setResponseAnswers((current) => ({ ...current, [currentResponse.id]: optionId }))
   }
+
+  const resetResponse = () => { setResponseAnswers({}); setResponseTurn(0); setSimulationFinished(false) }
+  const advance = () => { if (step < 3) setStep((current) => current + 1); else { onComplete(); onClose() } }
+  const back = () => { if (step > 0) setStep((current) => current - 1) }
 
   return (
-    <div className="email-lesson-backdrop">
-      <section
-        className="email-lesson-modal universal-lesson"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="social-module-title"
-      >
-        <header className="email-lesson-header">
-          <div>
-            <span className="lesson-kicker">{kicker}</span>
-            <h2 id="social-module-title">{title}</h2>
-          </div>
-          <button className="lesson-close" type="button" aria-label="Close training module" onClick={onClose}>
-            ×
-          </button>
+    <div className={`email-lesson-backdrop social-training-backdrop social-theme-${platform}`}>
+      <section className="email-lesson-modal universal-lesson social-training-modal" role="dialog" aria-modal="true" aria-labelledby={`${platform}-module-title`}>
+        <header className="email-lesson-header social-training-header">
+          <div className="social-training-title"><span className="social-module-mark" aria-hidden="true">{ui.mark}</span><div><span className="lesson-kicker">{kicker}</span><h2 id={`${platform}-module-title`}>{title}</h2></div></div>
+          <div className="social-training-header-status"><span /> LIVE AWARENESS LAB</div>
+          <button className="lesson-close" type="button" aria-label="Close training module" onClick={onClose}>×</button>
         </header>
 
-        <div className="lesson-progress" aria-label={`Training step ${step + 1} of 4`}>
-          {['1. SPOT THE SIGNS', '2. CHOOSE YOUR MOVE', '3. ATTACK SIMULATION', '4. DEFENSE SHIELD'].map(
-            (label, index) => (
-              <div
-                className={`${index === step ? 'current' : ''} ${index < step ? 'complete' : ''}`}
-                key={label}
-              >
-                <span>{index < step ? '✓' : index + 1}</span>
-                <small>{label}</small>
-              </div>
-            )
-          )}
-        </div>
+        <nav className="lesson-progress social-training-progress" aria-label={`Training stage ${step + 1} of 4`}>
+          {stageLabels.map(([number, label], index) => (
+            <button type="button" className={`${index === step ? 'current' : ''} ${index < step ? 'complete' : ''}`} key={number} disabled={index > step} onClick={() => index < step && setStep(index)} aria-current={index === step ? 'step' : undefined}>
+              <span>{index < step ? '✓' : number}</span><small>{label}</small>
+            </button>
+          ))}
+        </nav>
 
-        <div className="email-lesson-content" ref={contentRef}>
-          {/* STEP 1: INTERACTIVE APP SCANNER */}
-          {step === 0 && currentExample && (
-            <div className="lesson-stage">
-              <div className="lesson-stage-heading">
-                <span className="lesson-step-label">STEP 1 // SPOT ALL RED FLAGS</span>
-                <h3>Inspect the {platform === 'facebook' ? 'Messenger Chat' : platform === 'instagram' ? 'Direct Message' : 'LinkedIn InMail'}</h3>
-                <p>
-                  Scammers exploit trust, brand lookalikes, and artificial urgency. Tap each indicator below to investigate and expose the deception.
-                </p>
+        <div className="email-lesson-content social-training-content" ref={contentRef}>
+          {step === 0 && (
+            <div className="lesson-stage social-forensics-stage">
+              <div className="social-stage-intro">
+                <div><span className="lesson-step-label">STAGE 01 // PROFILE FORENSICS</span><h3>Investigate before you trust</h3><p>Fake profiles rarely fail in just one place. Compare the account history, identity details, network and request. Find every inconsistency across all three case files.</p></div>
+                <div className="social-stage-stat"><strong>{foundClues}<small> / {totalClues}</small></strong><span>WARNING SIGNS FOUND</span></div>
               </div>
 
-              {/* Case Study Switcher */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
-                {inspectionExamples.map((ex, idx) => (
-                  <button
-                    key={ex.id}
-                    type="button"
-                    className={`lesson-secondary ${currentExampleIndex === idx ? 'lesson-required-button' : ''}`}
-                    style={{ padding: '6px 12px', fontSize: '0.6rem', fontWeight: 700 }}
-                    onClick={() => setCurrentExampleIndex(idx)}
-                  >
-                    {ex.tag}: {ex.type}
-                  </button>
-                ))}
-              </div>
-
-              <div className="social-sim-container">
-                {/* Phone Mockup */}
-                <div className="social-phone-shell">
-                  <div className="social-phone-notch">
-                    <span>9:41</span>
-                    <div className="phone-island"></div>
-                    <span>📶 5G 🔋 98%</span>
-                  </div>
-
-                  <div className={`social-app-header ${platform}`}>
-                    <div className="social-avatar-wrapper">
-                      <div className={currentExample.storyActive ? 'story-ring' : ''}>
-                        <div
-                          className="avatar-circle"
-                          style={{
-                            background: currentExample.avatarBg,
-                            color: currentExample.avatarColor,
-                          }}
-                        >
-                          {currentExample.avatar}
-                        </div>
-                      </div>
-                      {currentExample.onlineStatus && <span className="online-indicator"></span>}
-                    </div>
-                    <div className="social-app-header-info">
-                      <h4>
-                        {currentExample.profileName}
-                        {currentExample.verifiedBadge && <span className="verified-badge-icon">✓</span>}
-                      </h4>
-                      <span>
-                        {currentExample.handle} • {currentExample.meta}
-                      </span>
-                    </div>
-                  </div>
-
-                  {currentExample.stats && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                        padding: '6px 10px',
-                        background: '#120718',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
-                        fontSize: '0.48rem',
-                        color: '#cbd5e1',
-                      }}
-                    >
-                      <span><strong>{currentExample.stats.posts}</strong> posts</span>
-                      <span><strong>{currentExample.stats.followers}</strong> followers</span>
-                      <span><strong>{currentExample.stats.following}</strong> following</span>
-                    </div>
-                  )}
-
-                  {currentExample.roleHighlight && (
-                    <div
-                      style={{
-                        padding: '7px 12px',
-                        background: '#081726',
-                        borderBottom: '1px solid rgba(255,255,255,0.06)',
-                        fontSize: '0.52rem',
-                        color: '#38bdf8',
-                        fontWeight: 700,
-                      }}
-                    >
-                      🎯 Position: {currentExample.roleHighlight}
-                    </div>
-                  )}
-
-                  <div className="social-chat-feed">
-                    {currentExample.mutualFriends && (
-                      <div style={{ textAlign: 'center', fontSize: '0.5rem', color: '#64748b', margin: '4px 0' }}>
-                        {currentExample.mutualFriends}
-                      </div>
-                    )}
-
-                    {currentExample.chatHistory?.map((msg, mIdx) => (
-                      <div key={mIdx} className={`social-chat-bubble them ${platform}`}>
-                        <p style={{ margin: 0 }}>{msg.text}</p>
-                        <span className="social-chat-time">{msg.time}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div
-                    style={{
-                      padding: '10px 14px',
-                      background: '#08111e',
-                      borderTop: '1px solid rgba(255,255,255,0.06)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                    }}
-                  >
-                    <span style={{ fontSize: '1rem', opacity: 0.7 }}>💬</span>
-                    <div
-                      style={{
-                        flex: 1,
-                        background: '#1e293b',
-                        borderRadius: '16px',
-                        padding: '6px 12px',
-                        fontSize: '0.55rem',
-                        color: '#64748b',
-                      }}
-                    >
-                      Type a response... (Do not click links or send funds)
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Danger Gauge & Clues */}
-                <div>
-                  <div className="scam-danger-gauge">
-                    <div className="scam-gauge-header">
-                      <span>LIVE DANGER GAUGE</span>
-                      <strong>
-                        {currentScamPercent}% DETECTED ({exampleRevealed.length}/{currentHotspots.length})
-                      </strong>
-                    </div>
-                    <div className="scam-gauge-bar-bg">
-                      <div className="scam-gauge-bar-fill" style={{ width: `${currentScamPercent}%` }}></div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.05em' }}>
-                      CLICK EACH INDICATOR TO EXPOSE:
-                    </span>
-                    {currentHotspots.map((clue) => {
-                      const found = exampleRevealed.includes(clue.id)
-                      return (
-                        <div
-                          key={clue.id}
-                          onClick={() => revealClue(clue.id)}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            border: found ? '1px solid #22c55e' : '1px dashed rgba(56, 189, 248, 0.5)',
-                            background: found ? 'rgba(34, 197, 94, 0.1)' : 'rgba(56, 189, 248, 0.08)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <strong style={{ fontSize: '0.62rem', color: found ? '#4ade80' : '#7dd3fc' }}>
-                              {found ? '✓ ' : '🔍 '} {clue.label}
-                            </strong>
-                            <span style={{ fontSize: '0.5rem', color: found ? '#22c55e' : '#94a3b8' }}>
-                              {found ? 'DISCOVERED' : 'TAP TO REVEAL'}
-                            </span>
-                          </div>
-
-                          {found && (
-                            <div style={{ marginTop: '6px', fontSize: '0.55rem', color: '#cbd5e1', lineHeight: 1.45 }}>
-                              <p style={{ margin: '0 0 4px', color: '#f8fafc' }}>{clue.explanation}</p>
-                              <div style={{ color: '#38bdf8', fontWeight: 700 }}>💡 Pro-Tip: {clue.teenTip}</div>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: DECISION CARDS */}
-          {step === 1 && (
-            <div className="lesson-stage">
-              <div className="lesson-stage-heading">
-                <span className="lesson-step-label">STEP 2 // CHOOSE YOUR MOVE</span>
-                <h3>What Would You Do in Real Life?</h3>
-                <p>Select the defensive choice for each scenario below to foil the attack.</p>
-              </div>
-
-              <div style={{ display: 'grid', gap: '20px' }}>
-                {comparisonExamples.map((item) => {
-                  const chosen = comparisonAnswers[item.id]
-                  const isAnswered = Boolean(chosen)
-                  const isCorrect = chosen === item.correct
-
+              <div className="social-case-tabs" role="tablist" aria-label="Fake profile case files">
+                {inspectionExamples.map((example, index) => {
+                  const found = (revealedClues[example.id] ?? []).length
+                  const complete = found === example.hotspots.length
                   return (
-                    <div
-                      key={item.id}
-                      style={{
-                        padding: '16px',
-                        border: '1px solid rgba(56, 189, 248, 0.3)',
-                        background: 'rgba(15, 23, 42, 0.7)',
-                        borderRadius: '12px',
-                      }}
-                    >
-                      <h4 style={{ margin: '0 0 4px', color: '#38bdf8', fontSize: '0.8rem' }}>{item.title}</h4>
-                      <p style={{ margin: '0 0 12px', fontSize: '0.62rem', color: '#94a3b8' }}>{item.prompt}</p>
-
-                      <div className="teen-decision-grid">
-                        <button
-                          type="button"
-                          className={`teen-decision-card ${chosen === 'a' ? (item.correct === 'a' ? 'selected-safe' : 'selected-trap') : ''}`}
-                          onClick={() => handleComparisonChoice(item.id, 'a')}
-                        >
-                          <span className={`decision-card-badge ${item.scenarios.a.isCorrect ? 'safe' : 'risky'}`}>
-                            {item.scenarios.a.tag}
-                          </span>
-                          <strong style={{ fontSize: '0.68rem', color: '#f8fafc', marginBottom: '4px' }}>
-                            {item.scenarios.a.sender}
-                          </strong>
-                          <p style={{ margin: '4px 0', fontSize: '0.58rem', color: '#cbd5e1' }}>
-                            {item.scenarios.a.message}
-                          </p>
-                          {chosen === 'a' && (
-                            <div style={{ marginTop: '8px', fontSize: '0.54rem', fontWeight: 700, color: item.scenarios.a.isCorrect ? '#4ade80' : '#f87171' }}>
-                              {item.scenarios.a.outcome}
-                            </div>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          className={`teen-decision-card ${chosen === 'b' ? (item.correct === 'b' ? 'selected-safe' : 'selected-trap') : ''}`}
-                          onClick={() => handleComparisonChoice(item.id, 'b')}
-                        >
-                          <span className={`decision-card-badge ${item.scenarios.b.isCorrect ? 'safe' : 'risky'}`}>
-                            {item.scenarios.b.tag}
-                          </span>
-                          <strong style={{ fontSize: '0.68rem', color: '#f8fafc', marginBottom: '4px' }}>
-                            {item.scenarios.b.sender}
-                          </strong>
-                          <p style={{ margin: '4px 0', fontSize: '0.58rem', color: '#cbd5e1' }}>
-                            {item.scenarios.b.message}
-                          </p>
-                          {chosen === 'b' && (
-                            <div style={{ marginTop: '8px', fontSize: '0.54rem', fontWeight: 700, color: item.scenarios.b.isCorrect ? '#4ade80' : '#f87171' }}>
-                              {item.scenarios.b.outcome}
-                            </div>
-                          )}
-                        </button>
-                      </div>
-
-                      {isAnswered && (
-                        <div className="teen-pro-tip-box" style={{ borderColor: isCorrect ? '#22c55e' : '#ef4444' }}>
-                          <strong style={{ color: isCorrect ? '#4ade80' : '#f87171' }}>
-                            {isCorrect ? '🎯 EXCELLENT CHOICE!' : '⚠️ SECURITY VULNERABILITY!'}
-                          </strong>
-                          {item.explanation}
-                        </div>
-                      )}
-                    </div>
+                    <button className={`${index === currentExampleIndex ? 'active' : ''} ${complete ? 'complete' : ''}`} type="button" role="tab" aria-selected={index === currentExampleIndex} key={example.id} onClick={() => setCurrentExampleIndex(index)}>
+                      <span>{complete ? '✓' : `0${index + 1}`}</span><div><small>{example.tag.replace(/[^\w\s]/g, '').trim()}</small><strong>{example.type}</strong></div><em>{found}/{example.hotspots.length}</em>
+                    </button>
                   )
                 })}
               </div>
+
+              <div className="social-forensics-grid"><PlatformProfile platform={platform} example={currentExample} revealedClues={currentRevealed} onReveal={revealClue} /><FindingPanel example={currentExample} revealedClues={currentRevealed} /></div>
             </div>
           )}
 
-          {/* STEP 3: ATTACK SIMULATION */}
+          {step === 1 && (
+            <div className="lesson-stage social-verification-stage">
+              <div className="social-stage-intro">
+                <div><span className="lesson-step-label">STAGE 02 // VERIFY THE IDENTITY</span><h3>Move from suspicion to proof</h3><p>A polished profile, mutual connections and a familiar photo are not proof. Choose the strongest independent verification method for each situation.</p></div>
+                <div className="social-stage-stat"><strong>{verificationPassed.length}<small> / {verificationChallenges.length}</small></strong><span>IDENTITIES VERIFIED</span></div>
+              </div>
+
+              <div className="social-verification-workspace">
+                <aside className="social-verification-cases"><span>VERIFICATION QUEUE</span>{verificationChallenges.map((challenge, index) => (
+                  <button className={`${index === verificationIndex ? 'active' : ''} ${verificationPassed.includes(challenge.id) ? 'complete' : ''}`} type="button" key={challenge.id} onClick={() => setVerificationIndex(index)}>
+                    <i>{verificationPassed.includes(challenge.id) ? '✓' : index + 1}</i><div><strong>{challenge.title}</strong><small>{challenge.category}</small></div>
+                  </button>
+                ))}</aside>
+
+                <section className="social-verification-case">
+                  <header><span>CASE {String(verificationIndex + 1).padStart(2, '0')}</span><div><small>{currentVerification.category}</small><h4>{currentVerification.title}</h4></div></header>
+                  <div className="social-verification-context"><span aria-hidden="true">?</span><p>{currentVerification.context}</p></div>
+                  <p className="social-verification-question">{currentVerification.question}</p>
+                  <div className="social-verification-options">
+                    {currentVerification.options.map((option) => {
+                      const selected = currentVerificationAnswer === option.id
+                      const correct = selected && option.id === currentVerification.correct
+                      const incorrect = selected && option.id !== currentVerification.correct
+                      return (
+                        <button className={`${selected ? 'selected' : ''} ${correct ? 'correct' : ''} ${incorrect ? 'incorrect' : ''}`} type="button" key={option.id} onClick={() => chooseVerificationAnswer(option.id)} disabled={currentVerificationPassed}>
+                          <span>{option.label}</span><p>{option.text}</p><i>{selected ? (correct ? '✓ VERIFIED' : '× NOT ENOUGH') : 'SELECT'}</i>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {currentVerificationAnswer && (
+                    <div className={`social-verification-feedback ${currentVerificationPassed ? 'correct' : 'incorrect'}`}><ShieldIcon checked={currentVerificationPassed} /><div><strong>{currentVerificationPassed ? 'Independent verification complete' : 'That evidence can still be manipulated'}</strong><p>{currentVerification.options.find((option) => option.id === currentVerificationAnswer)?.feedback}</p>{!currentVerificationPassed && <small>Try another verification route.</small>}</div></div>
+                  )}
+                </section>
+              </div>
+            </div>
+          )}
+
           {step === 2 && (
-            <div className="lesson-stage">
-              <div className="lesson-stage-heading">
-                <span className="lesson-step-label">STEP 3 // ATTACK SIMULATION</span>
-                <h3>Simulate the Attack Chain Reaction</h3>
-                <p>Toggle between the <strong>Attack Trap</strong> and the <strong>Defensive Shield</strong> to observe how prevention stops compromise.</p>
+            <div className="lesson-stage social-response-stage">
+              <div className="social-stage-intro">
+                <div><span className="lesson-step-label">STAGE 03 // CONTROL THE OUTCOME</span><h3>{responseScenario.title}</h3><p>{responseScenario.introduction}</p></div>
+                <div className={`social-exposure-meter ${exposure >= 60 ? 'critical' : exposure > 0 ? 'elevated' : ''}`}><strong>{Math.min(100, exposure)}%</strong><span>COMPROMISE RISK</span><i><b style={{ width: `${Math.min(100, exposure)}%` }} /></i></div>
               </div>
 
-              <div className="interactive-attack-sandbox">
-                <div className="sandbox-path-toggle">
-                  <button
-                    type="button"
-                    className={`sandbox-path-btn ${activeSimulationPath === 'trap' ? 'active trap-path' : ''}`}
-                    onClick={() => setActiveSimulationPath('trap')}
-                  >
-                    💀 SCENARIO 1: VICTIM FALLS FOR THE ATTACK
-                  </button>
-                  <button
-                    type="button"
-                    className={`sandbox-path-btn ${activeSimulationPath === 'safe' ? 'active safe-path' : ''}`}
-                    onClick={() => setActiveSimulationPath('safe')}
-                  >
-                    🛡️ SCENARIO 2: DEFENSIVE PROTOCOL ENGAGED
-                  </button>
-                </div>
-
-                {activeSimulationPath === 'trap' ? (
-                  <div>
-                    <div className="impact-chain">
-                      <article style={{ borderColor: '#ef4444' }}>
-                        <span style={{ color: '#ef4444' }}>1</span>
-                        <div>
-                          <strong>Initial Deception Lure</strong>
-                          <p>Scammer builds trust or fear with fake profiles, urgency, or too-good offers.</p>
-                        </div>
-                      </article>
-                      <i>➔</i>
-                      <article style={{ borderColor: '#ef4444' }}>
-                        <span style={{ color: '#ef4444' }}>2</span>
-                        <div>
-                          <strong>Credentials / Funds Sent</strong>
-                          <p>Victim executes the requested action without independent secondary verification.</p>
-                        </div>
-                      </article>
-                      <i>➔</i>
-                      <article style={{ borderColor: '#ef4444' }}>
-                        <span style={{ color: '#ef4444' }}>3</span>
-                        <div>
-                          <strong>Compromise & Loss</strong>
-                          <p>Funds drained, identity stolen, or account hijacked to target the victim's friends.</p>
-                        </div>
-                      </article>
-                    </div>
-
-                    <div className="awareness-callout" style={{ borderColor: '#ef4444', background: 'rgba(239, 68, 68, 0.1)' }}>
-                      <strong style={{ color: '#f87171' }}>WHY THIS OCCURRED:</strong>
-                      <p>Acting under artificial urgency without pausing for out-of-band verification allows social engineering attacks to succeed.</p>
-                    </div>
+              <div className="social-response-workspace">
+                <section className={`social-conversation-window social-platform-${platform}`}>
+                  <header><ProfileAvatar example={responseScenario.profile} /><div><strong>{responseScenario.profile.profileName}</strong><span>{responseScenario.profile.handle} • Active now</span></div><i>•••</i></header>
+                  <div className="social-conversation-history">
+                    {responseScenario.turns.slice(0, responseTurn + 1).map((turn, index) => {
+                      const answerId = responseAnswers[turn.id]
+                      const answer = turn.options.find((option) => option.id === answerId)
+                      return (
+                        <div className="social-conversation-exchange" key={turn.id}><div className="incoming"><p>{turn.message}</p><span>{turn.time}</span></div>{answer && <div className={`outgoing ${answer.risk === 0 ? 'safe' : answer.risk >= 30 ? 'risky' : 'uncertain'}`}><p>{answer.reply}</p><span>Your response</span></div>}{index < responseTurn && answer && <small>{answer.feedback}</small>}</div>
+                      )
+                    })}
                   </div>
-                ) : (
-                  <div>
-                    <div className="impact-chain">
-                      <article style={{ borderColor: '#22c55e' }}>
-                        <span style={{ color: '#22c55e' }}>1</span>
-                        <div>
-                          <strong>Red Flag Identified</strong>
-                          <p>User recognizes deceptive indicators: urgency, weird URLs, or unexpected payment demands.</p>
-                        </div>
-                      </article>
-                      <i>➔</i>
-                      <article style={{ borderColor: '#22c55e' }}>
-                        <span style={{ color: '#22c55e' }}>2</span>
-                        <div>
-                          <strong>Out-of-Band Verification</strong>
-                          <p>User verifies via live phone call, official app settings, or official company portal.</p>
-                        </div>
-                      </article>
-                      <i>➔</i>
-                      <article style={{ borderColor: '#22c55e' }}>
-                        <span style={{ color: '#22c55e' }}>3</span>
-                        <div>
-                          <strong>Attack Completely Neutralized</strong>
-                          <p>Account reported and blocked. Zero funds lost, devices remain secure! 🛡️</p>
-                        </div>
-                      </article>
-                    </div>
+                  <footer><span>＋</span><div>{currentResponseAnswer ? 'Response sent' : 'Choose a response from the decision console'}</div><button type="button" tabIndex="-1">➤</button></footer>
+                </section>
 
-                    <div className="awareness-callout" style={{ borderColor: '#22c55e', background: 'rgba(34, 197, 94, 0.1)' }}>
-                      <strong style={{ color: '#4ade80' }}>DEFENSIVE MASTERY:</strong>
-                      <p>Taking a 10-second pause to verify through a trusted channel completely protects your digital life.</p>
+                <section className="social-decision-console">
+                  {!simulationFinished ? (
+                    <>
+                      <header><span>DECISION {responseTurn + 1} OF {responseScenario.turns.length}</span><strong>{currentResponse.prompt}</strong></header>
+                      <div className="social-response-options">{currentResponse.options.map((option) => {
+                        const selected = currentResponseAnswer === option.id
+                        return <button className={`${selected ? 'selected' : ''} ${selected ? (option.risk === 0 ? 'safe' : option.risk >= 30 ? 'risky' : 'uncertain') : ''}`} type="button" key={option.id} onClick={() => chooseResponse(option.id)} disabled={Boolean(currentResponseAnswer)}><span>{option.label}</span><p>{option.action}</p></button>
+                      })}</div>
+                      {currentResponseAnswer && (
+                        <div className={`social-response-feedback ${currentResponse.options.find((option) => option.id === currentResponseAnswer)?.risk === 0 ? 'safe' : 'risk'}`}>
+                          <strong>{currentResponse.options.find((option) => option.id === currentResponseAnswer)?.resultTitle}</strong><p>{currentResponse.options.find((option) => option.id === currentResponseAnswer)?.feedback}</p>
+                          {responseTurn < responseScenario.turns.length - 1
+                            ? <button type="button" onClick={() => setResponseTurn((current) => current + 1)}>CONTINUE CONVERSATION →</button>
+                            : allResponsesMade && <button type="button" onClick={() => setSimulationFinished(true)}>VIEW OUTCOME →</button>}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className={`social-simulation-result ${exposure === 0 ? 'safe' : exposure >= 60 ? 'critical' : 'mixed'}`}>
+                      <span className="social-result-shield"><ShieldIcon checked={exposure === 0} /></span><small>SIMULATION COMPLETE</small>
+                      <h4>{exposure === 0 ? responseScenario.outcomes.safe.title : exposure >= 60 ? responseScenario.outcomes.risky.title : responseScenario.outcomes.mixed.title}</h4>
+                      <p>{exposure === 0 ? responseScenario.outcomes.safe.text : exposure >= 60 ? responseScenario.outcomes.risky.text : responseScenario.outcomes.mixed.text}</p>
+                      <div><span>SAFE DECISIONS</span><strong>{safeResponseCount} / {responseScenario.turns.length}</strong></div><button type="button" onClick={resetResponse}>↻ REPLAY DECISIONS</button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </section>
               </div>
             </div>
           )}
 
-          {/* STEP 4: REWARD & RULES */}
           {step === 3 && (
-            <div className="lesson-stage">
-              <div className="teen-achievement-card">
-                <div className="achievement-icon-circle">🛡️</div>
-                <span className="lesson-step-label">MODULE COMPLETE</span>
-                <h3 style={{ margin: '6px 0', fontSize: '1.2rem', color: '#38bdf8' }}>{summaryData?.badgeTitle}</h3>
-                <p style={{ margin: 0, fontSize: '0.62rem', color: '#94a3b8' }}>
-                  You have mastered threat detection and defensive protocols for this platform.
-                </p>
+            <div className="lesson-stage social-summary-stage">
+              <div className="social-completion-hero"><div className="social-completion-rings" aria-hidden="true"><span><ShieldIcon checked /></span></div><div><span className="lesson-step-label">STAGE 04 // FIELD SUMMARY</span><h3>{summaryData.badgeTitle}</h3><p>You can now recognise, verify and safely respond to fake {ui.name} profiles.</p></div><div className="social-final-score"><strong>{score}</strong><span>AWARENESS SCORE</span></div></div>
+
+              <div className="social-summary-grid">
+                <section className="social-summary-panel"><header><span>01</span><div><small>RECOGNISE</small><h4>Look for a pattern, not one clue</h4></div></header><p>Check account age, naming, content history, network quality, links and the nature of the request together.</p><div className="social-summary-patterns"><span>{summaryData.coreTactic}</span></div></section>
+                <section className="social-summary-panel"><header><span>02</span><div><small>VERIFY</small><h4>Leave the suspicious conversation</h4></div></header><p>{summaryData.bestPractice}</p><div className="social-summary-patterns"><span>Use a saved number</span><span>Open the official site yourself</span></div></section>
+                <section className="social-summary-panel"><header><span>03</span><div><small>CONTAIN</small><h4>Protect the wider network</h4></div></header><p>Do not send money, credentials, codes or files. Capture useful evidence, report the account and warn the real person through another channel.</p><div className="social-summary-patterns"><span>{ui.reportPath}</span></div></section>
               </div>
 
-              <div className="teen-golden-rules">
-                {summaryData?.teenRules?.map((rule, idx) => (
-                  <div key={idx} className="teen-rule-item">
-                    <span className="emoji">{rule.emoji}</span>
-                    <div>
-                      <strong style={{ color: '#38bdf8', fontSize: '0.62rem', display: 'block', marginBottom: '2px' }}>
-                        {rule.title}
-                      </strong>
-                      <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.4 }}>{rule.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <section className="social-field-rules"><header><span>FIELD RULES</span><p>Keep these behaviours after the simulation.</p></header><div>{summaryData.teenRules.map((rule) => <article key={rule.title}><span aria-hidden="true">{rule.emoji}</span><div><strong>{rule.title}</strong><p>{rule.text}</p></div></article>)}</div></section>
+              <div className="social-summary-note"><ShieldIcon checked /><p><strong>Remember:</strong> A profile can look convincing because the photos, job title and mutual connections may all be copied from a real person. Verify the person—not the appearance of the account.</p></div>
             </div>
           )}
         </div>
 
-        <footer className="email-lesson-footer">
-          <div>
-            <strong>
-              {step === 0
-                ? `${exampleRevealed.length}/${currentHotspots.length}`
-                : step === 1
-                ? `${Object.keys(comparisonAnswers).length}/${comparisonExamples.length}`
-                : 'READY'}
-            </strong>
-            <span>{step === 0 ? 'CLUES IN SCENARIO' : step === 1 ? 'DECISIONS MADE' : 'MODULE COMPLETE'}</span>
-          </div>
-          <button className="lesson-secondary" type="button" onClick={back} disabled={step === 0}>
-            BACK
-          </button>
-          <button className="lesson-primary" type="button" onClick={advance} disabled={!canAdvance}>
-            {step < 3 ? 'CONTINUE ➔' : completed ? 'COMPLETED ✓' : 'CLAIM SHIELD & FINISH'}
-          </button>
+        <footer className="email-lesson-footer social-training-footer">
+          <div><strong>{step === 0 ? `${foundClues}/${totalClues}` : step === 1 ? `${verificationPassed.length}/${verificationChallenges.length}` : step === 2 ? `${Object.keys(responseAnswers).length}/${responseScenario.turns.length}` : `${score}%`}</strong><span>{step === 0 ? 'EVIDENCE FOUND' : step === 1 ? 'CASES VERIFIED' : step === 2 ? 'DECISIONS MADE' : 'FINAL SCORE'}</span></div>
+          <button className="lesson-secondary" type="button" onClick={back} disabled={step === 0}>BACK</button>
+          <button className="lesson-primary" type="button" onClick={advance} disabled={!canAdvance}>{step < 3 ? 'CONTINUE →' : completed ? 'COMPLETE REVIEW ✓' : 'COMPLETE MODULE ✓'}</button>
         </footer>
       </section>
     </div>

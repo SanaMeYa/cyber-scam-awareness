@@ -1,18 +1,20 @@
 import SocialTrainingModule from './SocialTrainingModule.jsx'
 import {
-  linkedinComparisonExamples,
   linkedinInspectionExamples,
+  linkedinResponseScenario,
   linkedinSummaryData,
+  linkedinVerificationChallenges,
 } from './linkedinData.js'
 
 export default function LinkedInModule({ completed, onComplete, onClose }) {
   return (
     <SocialTrainingModule
       platform="linkedin"
-      kicker="MODULE 07 // PROFESSIONAL INMAIL & RECRUITER TRAPS"
-      title="LINKEDIN CAREER & RECRUITMENT SCAM AWARENESS"
+      kicker="MODULE 07 // PROFESSIONAL IDENTITY DEFENCE"
+      title="LINKEDIN RECRUITMENT & IMPERSONATION DEFENCE"
       inspectionExamples={linkedinInspectionExamples}
-      comparisonExamples={linkedinComparisonExamples}
+      verificationChallenges={linkedinVerificationChallenges}
+      responseScenario={linkedinResponseScenario}
       summaryData={linkedinSummaryData}
       completed={completed}
       onComplete={onComplete}
