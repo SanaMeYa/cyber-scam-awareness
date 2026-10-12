@@ -1,8 +1,9 @@
 import SocialTrainingModule from './SocialTrainingModule.jsx'
 import {
-  facebookComparisonExamples,
   facebookInspectionExamples,
+  facebookResponseScenario,
   facebookSummaryData,
+  facebookVerificationChallenges,
 } from './facebookData.js'
 
 export default function FacebookModule({ completed, onComplete, onClose }) {
@@ -10,9 +11,10 @@ export default function FacebookModule({ completed, onComplete, onClose }) {
     <SocialTrainingModule
       platform="facebook"
       kicker="MODULE 05 // FAKE SOCIAL PROFILE DETECTIVE"
-      title="FACEBOOK & MESSENGER SCAM AWARENESS"
+      title="FACEBOOK IDENTITY & MARKETPLACE DEFENCE"
       inspectionExamples={facebookInspectionExamples}
-      comparisonExamples={facebookComparisonExamples}
+      verificationChallenges={facebookVerificationChallenges}
+      responseScenario={facebookResponseScenario}
       summaryData={facebookSummaryData}
       completed={completed}
       onComplete={onComplete}

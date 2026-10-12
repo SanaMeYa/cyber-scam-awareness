@@ -20,9 +20,9 @@ export const instagramInspectionExamples = [
     ],
     hotspots: [
       { id: 'insta-handle-spoof', label: 'Lookalike Handle with Underscores', targetText: '@solstice_giveaways_official_', title: '🚨 Fake Lookalike Account', explanation: 'Scammers add extra underscores, dots, or "official_" to impersonate real brands.', teenTip: 'Real brands have a blue verified badge and won\'t have numbers or extra symbols in their handle.' },
-      { id: 'insta-follow-ratio', label: 'Suspicious Follower Ratio', targetText: '0 posts • 14 followers • following 3,840', title: '🚨 Bot Follower Imbalance', explanation: 'A profile with almost zero followers following thousands of accounts is an automated scam account.', teenTip: 'Always tap their profile to check their posts and account history.' },
+      { id: 'insta-follow-ratio', label: 'Suspicious Follower Ratio', targetText: '0 posts • 14 followers • following 3,840', title: '🚨 Bot-Like Account Pattern', explanation: 'Almost no content combined with thousands of followed accounts is consistent with newly created mass-messaging profiles.', teenTip: 'Review the profile’s content and history, but treat these details as warning signs rather than proof on their own.' },
       { id: 'insta-bio-link', label: 'Suspicious Phishing Link', targetText: 'claim-solstice-prize.xyz', title: '🚨 Credential Phishing Portal', explanation: 'The link opens a fake Instagram login page designed to steal your password and 2FA authentication codes.', teenTip: 'Never enter your Instagram password on any site opened from a DM link.' },
-      { id: 'insta-urgency', label: '30-Minute Panic Countdown', targetText: 'Hurry! If you do not claim within 30 minutes', title: '🚨 Artificial Urgency Trigger', explanation: 'The fake countdown stops you from asking friends or checking the real brand\'s official website.', teenTip: 'Contests that force you to act in minutes are always fraudulent.' }
+      { id: 'insta-urgency', label: '30-Minute Panic Countdown', targetText: 'Hurry! If you do not claim within 30 minutes', title: '🚨 Artificial Urgency Trigger', explanation: 'The countdown discourages you from checking the real brand’s official profile, website and contest terms.', teenTip: 'Do not let a deadline prevent independent verification; genuine terms should be available through official channels.' }
     ]
   },
   {
@@ -137,7 +137,83 @@ export const instagramSummaryData = {
   teenRules: [
     { emoji: '🔑', title: 'The Golden 2FA Rule', text: 'NEVER screenshot or send an SMS code to anyone—even your closest friend. That code is the key to YOUR account.' },
     { emoji: '🚫', title: 'Support Never DMs', text: 'Instagram will never send copyright strikes or account deletion notices in your DMs. Official notices are always inside Settings.' },
-    { emoji: '🔵', title: 'Look for the Blue Check', text: 'Real brands and influencers have official verified badges. Always look for spelling errors, extra numbers, or weird follower ratios.' }
+    { emoji: '🔵', title: 'Verification Is One Signal', text: 'A badge can add context but is not enough by itself. Check the exact handle, account history and links against the organisation’s official website.' }
   ]
+}
+
+export const instagramVerificationChallenges = [
+  {
+    id: 'ig-verify-giveaway', category: 'FAKE GIVEAWAY', title: 'A brand account says you won',
+    context: 'An unverified account with a familiar logo says you won a prize. It links to a login page and gives you thirty minutes to claim it.',
+    question: 'What provides the strongest evidence that the giveaway and winner notification are genuine?', correct: 'official-rules',
+    options: [
+      { id: 'logo', label: 'COMPARE THE LOGO', text: 'Proceed if the logo and colours match the real brand.', feedback: 'Logos and brand artwork are public and easy to copy. Appearance does not prove account ownership.' },
+      { id: 'followers', label: 'CHECK FOLLOWERS', text: 'Proceed if the account has some real-looking followers and comments.', feedback: 'Followers, comments and likes can be purchased or copied. They are weak evidence on their own.' },
+      { id: 'official-rules', label: 'CHECK THE OFFICIAL ACCOUNT', text: 'Open the verified brand profile yourself and locate the original contest rules and winner process.', feedback: 'You independently confirm whether the contest exists and how the real brand contacts winners without using the DM link.' },
+      { id: 'open-link', label: 'PREVIEW THE LINK', text: 'Open the link but leave immediately if the page looks unusual.', feedback: 'Opening an untrusted link creates unnecessary risk, and convincing phishing pages may look identical to the real login page.' },
+    ],
+  },
+  {
+    id: 'ig-verify-support', category: 'SUPPORT IMPERSONATION', title: 'A copyright warning threatens deletion',
+    context: 'A profile calling itself Meta Help Desk says your account will be permanently disabled unless you appeal through a link in its DM.',
+    question: 'Where should you check whether Instagram has actually taken action against your account?', correct: 'account-status',
+    options: [
+      { id: 'reply', label: 'REPLY TO SUPPORT', text: 'Ask the profile to provide your case number and the reported post.', feedback: 'An impersonator can invent case details. You are still relying on the identity being questioned.' },
+      { id: 'account-status', label: 'USE INSTAGRAM SETTINGS', text: 'Open Instagram directly and check Account Status or Support Requests in your settings.', feedback: 'Official in-app account status separates genuine platform notices from profiles pretending to be support.' },
+      { id: 'search-name', label: 'SEARCH THE USERNAME', text: 'Trust it if search results show other support accounts with similar names.', feedback: 'Scam networks often create many similar accounts. Search volume does not establish legitimacy.' },
+      { id: 'friend-opinion', label: 'ASK A FRIEND', text: 'Send a screenshot to a friend and proceed if they think it looks professional.', feedback: 'A second opinion helps, but official in-app records are much stronger evidence.' },
+    ],
+  },
+  {
+    id: 'ig-verify-friend', category: 'COMPROMISED FRIEND', title: 'A friend asks for your security code',
+    context: 'A real friend’s account asks you to forward a link or code sent to your phone so they can receive a vote in a contest.',
+    question: 'How do you verify the person and protect both accounts?', correct: 'call-friend',
+    options: [
+      { id: 'old-photo', label: 'ASK ABOUT A PHOTO', text: 'Ask who took one of the older photos on their profile.', feedback: 'A person controlling the account can see its posts and messages. Profile knowledge is not independent verification.' },
+      { id: 'call-friend', label: 'CONTACT THEM ELSEWHERE', text: 'Do not share the code. Call or message your friend using a separate, previously established channel.', feedback: 'This confirms whether the account is compromised while keeping your recovery token private.' },
+      { id: 'partial-code', label: 'SHARE PART OF IT', text: 'Send only the first half of the code so they can prove what it is for.', feedback: 'Security codes should never be shared. Partial information can still help an attacker manipulate you or complete another step.' },
+      { id: 'dm-call', label: 'CALL INSIDE INSTAGRAM', text: 'Use Instagram’s call button on the same account to verify them.', feedback: 'This is better than text, but the suspicious account controls the channel and may decline, delay or use synthetic media. A separate saved channel is stronger.' },
+    ],
+  },
+]
+
+export const instagramResponseScenario = {
+  title: 'Protect your account from a code-relay scam',
+  introduction: 'A compromised friend account tries to turn your trust into access to your own profile. Decide how you respond as the pressure increases.',
+  profile: { profileName: 'Chloe Bennett', handle: '@chloe_bennett_private', avatar: 'CB', avatarBg: '#9333ea', avatarColor: '#ffffff' },
+  turns: [
+    {
+      id: 'ig-response-1', time: '6:10 PM', message: 'Heyy, can you help me win an ambassador contest? I only need one more vote and it takes like five seconds.',
+      prompt: 'The request comes from a real friend’s account. What do you do?',
+      options: [
+        { id: 'verify', label: 'VERIFY FIRST', action: 'Call Chloe using her saved phone number before doing anything.', reply: 'Yeah maybe, but I’m gonna call you first—this message feels a bit random.', scammerReply: 'I can’t answer right now, I’m backstage with the organisers. Please just vote before the round closes!', scammerTime: '6:11 PM', risk: 0, resultTitle: 'Trust is checked outside the account', feedback: 'The account avoids the independent call and pushes urgency instead, giving you another reason to stop.' },
+        { id: 'details', label: 'ASK FOR DETAILS', action: 'Ask for the contest name and voting page before deciding.', reply: 'What contest is it? Send me the official public page first.', scammerReply: 'It’s the Creator Launch Ambassador final. There isn’t a public page—the vote is verified through an Instagram security message.', scammerTime: '6:11 PM', risk: 12, resultTitle: 'You slow the attack but stay engaged', feedback: 'The attacker invents a reason why public verification is unavailable and redirects you towards a private security message.' },
+        { id: 'agree', label: 'AGREE TO HELP', action: 'Follow the instructions because the account belongs to your friend.', reply: 'Sure, tell me what I need to do.', scammerReply: 'Legend! Send me your mobile number. Instagram will text you a voting link—screenshot the entire message and send it here.', scammerTime: '6:11 PM', risk: 30, resultTitle: 'The attacker gains cooperation', feedback: 'Your agreement is answered with a request for information connected to your own account recovery.' },
+      ],
+    },
+    {
+      id: 'ig-response-2', time: '6:11 PM', message: '',
+      prompt: 'The account steers you towards a private Instagram security message. What do you do now?',
+      options: [
+        { id: 'keep-private', label: 'KEEP IT PRIVATE', action: 'Do not share it. Read the security message and check your own login activity.', reply: 'Nah, that message says it’s for my account. I’m not sending the link or code to anyone.', scammerReply: 'It only says that because it’s an automated vote system. Don’t overthink it—send it before my entry expires.', scammerTime: '6:12 PM', risk: 0, resultTitle: 'Your recovery token stays private', feedback: 'The attacker dismisses the security warning because it directly contradicts the scam story.' },
+        { id: 'hide-code', label: 'CROP THE SCREENSHOT', action: 'Hide the numeric code but send the rest of the message.', reply: 'I’ll hide the code and send you the rest so you can check it.', scammerReply: 'The link is the part I need. Send the whole screenshot or the vote won’t register.', scammerTime: '6:12 PM', risk: 18, resultTitle: 'Sensitive context is still exposed', feedback: 'The attacker specifically demands the recovery link, revealing that even a cropped screenshot is unsafe.' },
+        { id: 'send-shot', label: 'SEND THE SCREENSHOT', action: 'Forward the full message so your friend gets the vote.', reply: 'Got it. Sending the screenshot now.', scammerReply: 'Thanks! It’s processing. If Instagram sends another code, send that too and don’t log out while I finish it.', scammerTime: '6:12 PM', risk: 45, resultTitle: 'Account recovery is handed to the attacker', feedback: 'After receiving one recovery credential, the attacker asks for the next authentication step to complete the takeover.' },
+      ],
+    },
+    {
+      id: 'ig-response-3', time: '6:13 PM', message: '',
+      prompt: 'The account responds with more pressure or another security request. How do you finish?',
+      options: [
+        { id: 'secure-report', label: 'SECURE AND REPORT', action: 'Check active sessions, enable MFA, report the account and warn Chloe elsewhere.', reply: 'I called Chloe—this isn’t her. I’m securing my account and reporting this conversation now.', scammerReply: 'Message failed to send. This account has restricted who can message it.', scammerTime: 'Account status', risk: 0, resultTitle: 'Both the account and network are protected', feedback: 'Security checks contain attempted access, while reporting and warning the real owner reduces further victimisation.' },
+        { id: 'ignore', label: 'IGNORE THE CHAT', action: 'Stop replying but take no additional action.', reply: 'I’m not sending anything else. Bye.', scammerReply: 'Hello?? I really need this. At least don’t tell Chloe until the contest is over.', scammerTime: '6:14 PM', risk: 10, resultTitle: 'The immediate request fails', feedback: 'You avoid another disclosure, but the compromised account can continue targeting followers until it is reported and recovered.' },
+        { id: 'delete', label: 'DELETE THE EVIDENCE', action: 'Delete the conversation because it feels uncomfortable.', reply: 'Fine, I’m deleting this conversation.', scammerReply: 'Good. If another code arrives, send it first and then clear that message too.', scammerTime: '6:14 PM', risk: 25, resultTitle: 'Useful evidence disappears', feedback: 'The attacker welcomes deletion because it removes details needed to report the account and explain the compromise.' },
+      ],
+    },
+  ],
+  outcomes: {
+    safe: { title: 'Account takeover prevented', text: 'You treated the security message as private, verified your friend elsewhere and contained the compromised profile.' },
+    mixed: { title: 'Your code stayed private, but risk remains', text: 'You resisted the central request, although delayed reporting or partial engagement left the attacker with more opportunity.' },
+    risky: { title: 'Recovery access was exposed', text: 'Trust in the compromised profile allowed the attacker to turn an account-recovery message into an account takeover.' },
+  },
 }
 
