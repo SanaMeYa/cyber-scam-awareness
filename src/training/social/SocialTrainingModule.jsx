@@ -47,9 +47,65 @@ function ProfileAvatar({ example }) {
   )
 }
 
+function findEvidenceSegment(text, clue) {
+  const source = String(text ?? '')
+  const candidates = String(clue.targetText ?? '')
+    .split(/\.\.\.|…|•/)
+    .map((part) => part.trim().replace(/^['“”]|['“”]$/g, ''))
+    .filter((part) => part.length >= 4)
+    .sort((a, b) => b.length - a.length)
+
+  for (const candidate of candidates) {
+    const index = source.toLocaleLowerCase().indexOf(candidate.toLocaleLowerCase())
+    if (index >= 0) return { index, length: candidate.length }
+  }
+
+  return null
+}
+
+function EvidenceText({ as = 'span', text, hotspots, revealedClues, onReveal, className = '' }) {
+  const matches = hotspots
+    .map((clue) => ({ clue, match: findEvidenceSegment(text, clue) }))
+    .filter(({ match }) => match)
+    .sort((a, b) => a.match.index - b.match.index)
+    .filter((item, index, items) => index === 0 || item.match.index >= items[index - 1].match.index + items[index - 1].match.length)
+
+  if (!matches.length) {
+    const Element = as
+    return <Element className={className}>{text}</Element>
+  }
+
+  const content = []
+  let cursor = 0
+
+  matches.forEach(({ clue, match }) => {
+    if (match.index > cursor) content.push(text.slice(cursor, match.index))
+    const found = revealedClues.includes(clue.id)
+    content.push(
+      <button
+        className={`social-inline-evidence ${found ? 'found' : ''}`}
+        type="button"
+        key={clue.id}
+        onClick={() => onReveal(clue.id)}
+        aria-pressed={found}
+        aria-label={`${found ? 'Found' : 'Inspect'} warning sign: ${clue.label}`}
+      >
+        {text.slice(match.index, match.index + match.length)}
+        {found && <span aria-hidden="true">✓</span>}
+      </button>,
+    )
+    cursor = match.index + match.length
+  })
+
+  if (cursor < text.length) content.push(text.slice(cursor))
+  const Element = as
+  return <Element className={className}>{content}</Element>
+}
+
 function PlatformProfile({ platform, example, revealedClues, onReveal }) {
   const ui = platformUi[platform]
   const stats = example.stats
+  const statsText = stats ? `${stats.posts} posts • ${stats.followers} followers • following ${stats.following}` : ''
 
   return (
     <article className={`social-platform-window social-platform-${platform}`}>
@@ -70,17 +126,17 @@ function PlatformProfile({ platform, example, revealedClues, onReveal }) {
         <ProfileAvatar example={example} />
         <div>
           <h4>{example.profileName}{example.verifiedBadge && <span className="social-verified-badge" title="Verified profile">✓</span>}</h4>
-          <p>{example.handle}</p>
-          <small>{example.meta}</small>
+          <EvidenceText as="p" text={example.handle} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />
+          <EvidenceText as="small" text={example.meta} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />
         </div>
         <button type="button" tabIndex="-1" aria-hidden="true">{platform === 'linkedin' ? 'Connect' : 'Message'}</button>
       </section>
 
       {(stats || example.roleHighlight || example.mutualFriends) && (
         <div className="social-profile-facts">
-          {stats && <><span><strong>{stats.posts}</strong> posts</span><span><strong>{stats.followers}</strong> followers</span><span><strong>{stats.following}</strong> following</span></>}
-          {example.roleHighlight && <span className="wide"><strong>Claimed role</strong>{example.roleHighlight}</span>}
-          {example.mutualFriends && <span className="wide"><strong>Network</strong>{example.mutualFriends}</span>}
+          {stats && <EvidenceText as="span" className="social-stats-evidence" text={statsText} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />}
+          {example.roleHighlight && <span className="wide"><strong>Claimed role</strong><EvidenceText text={example.roleHighlight} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} /></span>}
+          {example.mutualFriends && <span className="wide"><strong>Network</strong><EvidenceText text={example.mutualFriends} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} /></span>}
         </div>
       )}
 
@@ -88,26 +144,13 @@ function PlatformProfile({ platform, example, revealedClues, onReveal }) {
         <header><ProfileAvatar example={example} /><div><strong>{example.profileName}</strong><span>{example.onlineStatus || ui.surface}</span></div></header>
         <div className="social-message-thread">
           {example.chatHistory?.map((message, index) => (
-            <div className="social-message" key={`${message.time}-${index}`}><p>{message.text}</p><span>{message.time}</span></div>
+            <div className="social-message" key={`${message.time}-${index}`}>
+              <EvidenceText as="p" text={message.text} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />
+              <span>{message.time}</span>
+            </div>
           ))}
         </div>
       </div>
-
-      <section className="social-evidence-layer" aria-label="Suspicious profile evidence">
-        <header><div><span className="social-live-dot" /> EVIDENCE SCAN ACTIVE</div><small>Tap every suspicious detail</small></header>
-        <div>
-          {example.hotspots.map((clue, index) => {
-            const found = revealedClues.includes(clue.id)
-            return (
-              <button className={found ? 'found' : ''} type="button" key={clue.id} onClick={() => onReveal(clue.id)} aria-pressed={found}>
-                <span>{found ? '✓' : String(index + 1).padStart(2, '0')}</span>
-                <div><small>{clue.label}</small><strong>“{clue.targetText}”</strong></div>
-                <em>{found ? 'ANALYSED' : 'INSPECT'}</em>
-              </button>
-            )
-          })}
-        </div>
-      </section>
     </article>
   )
 }
@@ -134,7 +177,7 @@ function FindingPanel({ example, revealedClues }) {
           <div><strong>SAFER MOVE</strong>{activeFinding.teenTip}</div>
         </article>
       ) : (
-        <div className="social-empty-finding"><span aria-hidden="true">⌖</span><p>Select a pulsing evidence item inside the profile preview.</p></div>
+        <div className="social-empty-finding"><span aria-hidden="true">⌖</span><p>Inspect the profile and conversation, then select the suspicious words or details directly.</p></div>
       )}
 
       <div className="social-case-checklist">
@@ -159,9 +202,10 @@ export default function SocialTrainingModule({
   const [verificationAnswers, setVerificationAnswers] = useState({})
   const [verificationPassed, setVerificationPassed] = useState([])
   const [responseTurn, setResponseTurn] = useState(0)
-  const [responseAnswers, setResponseAnswers] = useState({})
+  const [responseHistory, setResponseHistory] = useState([])
   const [simulationFinished, setSimulationFinished] = useState(false)
   const contentRef = useRef(null)
+  const conversationRef = useRef(null)
   const ui = platformUi[platform]
 
   useEffect(() => {
@@ -172,6 +216,10 @@ export default function SocialTrainingModule({
 
   useEffect(() => { contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) }, [step])
 
+  useEffect(() => {
+    conversationRef.current?.scrollTo({ top: conversationRef.current.scrollHeight, behavior: 'smooth' })
+  }, [responseHistory])
+
   const currentExample = inspectionExamples[currentExampleIndex] ?? inspectionExamples[0]
   const currentRevealed = revealedClues[currentExample.id] ?? []
   const totalClues = inspectionExamples.reduce((total, example) => total + example.hotspots.length, 0)
@@ -181,13 +229,14 @@ export default function SocialTrainingModule({
   const currentVerificationAnswer = verificationAnswers[currentVerification.id]
   const currentVerificationPassed = verificationPassed.includes(currentVerification.id)
   const currentResponse = responseScenario.turns[responseTurn]
-  const currentResponseAnswer = currentResponse ? responseAnswers[currentResponse.id] : null
-  const allResponsesMade = Object.keys(responseAnswers).length === responseScenario.turns.length
+  const currentResponseRecord = responseHistory[responseTurn]
+  const currentResponseAnswer = currentResponseRecord?.option.id
+  const allResponsesMade = responseHistory.length === responseScenario.turns.length
 
-  const safeResponseCount = useMemo(() => responseScenario.turns.reduce((total, turn) => {
-    const option = turn.options.find((item) => item.id === responseAnswers[turn.id])
-    return total + (option?.risk === 0 ? 1 : 0)
-  }, 0), [responseAnswers, responseScenario.turns])
+  const safeResponseCount = useMemo(
+    () => responseHistory.filter(({ option }) => option.risk === 0).length,
+    [responseHistory],
+  )
 
   const score = Math.round(
     (foundClues / Math.max(1, totalClues)) * 40
@@ -195,10 +244,7 @@ export default function SocialTrainingModule({
     + (safeResponseCount / Math.max(1, responseScenario.turns.length)) * 30
   )
 
-  const exposure = responseScenario.turns.reduce((total, turn) => {
-    const option = turn.options.find((item) => item.id === responseAnswers[turn.id])
-    return total + (option?.risk ?? 0)
-  }, 0)
+  const exposure = responseHistory.reduce((total, { option }) => total + option.risk, 0)
 
   const canAdvance = step === 0 ? allCluesFound
     : step === 1 ? verificationPassed.length === verificationChallenges.length
@@ -221,10 +267,12 @@ export default function SocialTrainingModule({
 
   const chooseResponse = (optionId) => {
     if (!currentResponse || currentResponseAnswer) return
-    setResponseAnswers((current) => ({ ...current, [currentResponse.id]: optionId }))
+    const option = currentResponse.options.find((item) => item.id === optionId)
+    if (!option) return
+    setResponseHistory((current) => [...current, { turn: currentResponse, option }])
   }
 
-  const resetResponse = () => { setResponseAnswers({}); setResponseTurn(0); setSimulationFinished(false) }
+  const resetResponse = () => { setResponseHistory([]); setResponseTurn(0); setSimulationFinished(false) }
   const advance = () => { if (step < 3) setStep((current) => current + 1); else { onComplete(); onClose() } }
   const back = () => { if (step > 0) setStep((current) => current - 1) }
 
@@ -317,14 +365,17 @@ export default function SocialTrainingModule({
               <div className="social-response-workspace">
                 <section className={`social-conversation-window social-platform-${platform}`}>
                   <header><ProfileAvatar example={responseScenario.profile} /><div><strong>{responseScenario.profile.profileName}</strong><span>{responseScenario.profile.handle} • Active now</span></div><i>•••</i></header>
-                  <div className="social-conversation-history">
-                    {responseScenario.turns.slice(0, responseTurn + 1).map((turn, index) => {
-                      const answerId = responseAnswers[turn.id]
-                      const answer = turn.options.find((option) => option.id === answerId)
-                      return (
-                        <div className="social-conversation-exchange" key={turn.id}><div className="incoming"><p>{turn.message}</p><span>{turn.time}</span></div>{answer && <div className={`outgoing ${answer.risk === 0 ? 'safe' : answer.risk >= 30 ? 'risky' : 'uncertain'}`}><p>{answer.reply}</p><span>Your response</span></div>}{index < responseTurn && answer && <small>{answer.feedback}</small>}</div>
-                      )
-                    })}
+                  <div className="social-conversation-history" ref={conversationRef}>
+                    <div className="social-conversation-exchange">
+                      <div className="incoming"><p>{responseScenario.turns[0].message}</p><span>{responseScenario.turns[0].time}</span></div>
+                    </div>
+                    {responseHistory.map(({ turn, option }, index) => (
+                      <div className="social-conversation-exchange" key={turn.id}>
+                        <div className={`outgoing ${option.risk === 0 ? 'safe' : option.risk >= 30 ? 'risky' : 'uncertain'}`}><p>{option.reply}</p><span>Your response</span></div>
+                        <div className="incoming social-scammer-reaction"><p>{option.scammerReply}</p><span>{option.scammerTime ?? `Follow-up ${index + 1}`}</span></div>
+                        {index < responseTurn && <small>{option.feedback}</small>}
+                      </div>
+                    ))}
                   </div>
                   <footer><span>＋</span><div>{currentResponseAnswer ? 'Response sent' : 'Choose a response from the decision console'}</div><button type="button" tabIndex="-1">➤</button></footer>
                 </section>
@@ -338,8 +389,8 @@ export default function SocialTrainingModule({
                         return <button className={`${selected ? 'selected' : ''} ${selected ? (option.risk === 0 ? 'safe' : option.risk >= 30 ? 'risky' : 'uncertain') : ''}`} type="button" key={option.id} onClick={() => chooseResponse(option.id)} disabled={Boolean(currentResponseAnswer)}><span>{option.label}</span><p>{option.action}</p></button>
                       })}</div>
                       {currentResponseAnswer && (
-                        <div className={`social-response-feedback ${currentResponse.options.find((option) => option.id === currentResponseAnswer)?.risk === 0 ? 'safe' : 'risk'}`}>
-                          <strong>{currentResponse.options.find((option) => option.id === currentResponseAnswer)?.resultTitle}</strong><p>{currentResponse.options.find((option) => option.id === currentResponseAnswer)?.feedback}</p>
+                        <div className={`social-response-feedback ${currentResponseRecord.option.risk === 0 ? 'safe' : 'risk'}`}>
+                          <strong>{currentResponseRecord.option.resultTitle}</strong><p>{currentResponseRecord.option.feedback}</p>
                           {responseTurn < responseScenario.turns.length - 1
                             ? <button type="button" onClick={() => setResponseTurn((current) => current + 1)}>CONTINUE CONVERSATION →</button>
                             : allResponsesMade && <button type="button" onClick={() => setSimulationFinished(true)}>VIEW OUTCOME →</button>}
@@ -376,7 +427,7 @@ export default function SocialTrainingModule({
         </div>
 
         <footer className="email-lesson-footer social-training-footer">
-          <div><strong>{step === 0 ? `${foundClues}/${totalClues}` : step === 1 ? `${verificationPassed.length}/${verificationChallenges.length}` : step === 2 ? `${Object.keys(responseAnswers).length}/${responseScenario.turns.length}` : `${score}%`}</strong><span>{step === 0 ? 'EVIDENCE FOUND' : step === 1 ? 'CASES VERIFIED' : step === 2 ? 'DECISIONS MADE' : 'FINAL SCORE'}</span></div>
+          <div><strong>{step === 0 ? `${foundClues}/${totalClues}` : step === 1 ? `${verificationPassed.length}/${verificationChallenges.length}` : step === 2 ? `${responseHistory.length}/${responseScenario.turns.length}` : `${score}%`}</strong><span>{step === 0 ? 'EVIDENCE FOUND' : step === 1 ? 'CASES VERIFIED' : step === 2 ? 'DECISIONS MADE' : 'FINAL SCORE'}</span></div>
           <button className="lesson-secondary" type="button" onClick={back} disabled={step === 0}>BACK</button>
           <button className="lesson-primary" type="button" onClick={advance} disabled={!canAdvance}>{step < 3 ? 'CONTINUE →' : completed ? 'COMPLETE REVIEW ✓' : 'COMPLETE MODULE ✓'}</button>
         </footer>

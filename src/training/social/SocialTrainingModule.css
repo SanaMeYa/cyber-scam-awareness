@@ -242,6 +242,42 @@
 .social-profile-facts span { display: flex; align-items: center; gap: 4px; }
 .social-profile-facts strong { color: #263844; }
 .social-profile-facts .wide { margin-left: auto; max-width: 54%; justify-content: flex-end; text-align: right; }
+.social-stats-evidence { gap: 0 !important; }
+
+.social-inline-evidence {
+  display: inline;
+  margin: 0;
+  padding: 1px 2px;
+  border: 0;
+  border-radius: 3px;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  cursor: crosshair;
+  transition: color .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+.social-inline-evidence:hover,
+.social-inline-evidence:focus-visible {
+  outline: none;
+  color: #071a20;
+  background: rgba(255, 193, 69, .82);
+  box-shadow: 0 0 0 2px rgba(255, 193, 69, .28);
+}
+.social-inline-evidence.found {
+  color: #073522;
+  background: rgba(74, 222, 157, .82);
+  box-shadow: 0 0 0 2px rgba(38, 187, 129, .28), 0 0 12px rgba(40, 197, 137, .25);
+}
+.social-inline-evidence > span {
+  margin-left: 4px;
+  display: inline;
+  color: #073522;
+  font-size: .82em;
+  font-weight: 900;
+}
 
 .social-message-area { background: #f3f5f7; }
 .social-message-area > header { min-height: 43px; padding: 6px 13px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid #d7dfe5; background: #fff; }
@@ -362,6 +398,7 @@
 .social-conversation-exchange p { margin: 0; font-size: .59rem; line-height: 1.48; }
 .social-conversation-exchange span { display: block; margin-top: 4px; font-size: .43rem; opacity: .68; }
 .social-conversation-exchange .incoming { align-self: flex-start; border: 1px solid #d5dee4; border-bottom-left-radius: 3px; background: white; }
+.social-conversation-exchange .social-scammer-reaction { animation: social-message-in .26s ease-out; }
 .social-conversation-exchange .outgoing { align-self: flex-end; color: white; border-bottom-right-radius: 3px; background: var(--social-accent); }
 .social-conversation-exchange .outgoing.safe { background: #19976e; }
 .social-conversation-exchange .outgoing.uncertain { background: #b3781f; }
@@ -447,7 +484,81 @@
 @keyframes social-live-pulse { 50% { opacity: .4; transform: scale(.82); } }
 @keyframes social-evidence-pulse { 50% { box-shadow: 0 0 12px rgba(var(--social-accent-rgb), .52); transform: scale(.92); } }
 @keyframes social-finding-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes social-message-in { from { opacity: 0; transform: translateX(-8px); } }
 @keyframes social-ring-spin { to { transform: rotate(360deg); } }
+
+/* Readability pass: preserve the compact interface while lifting the smallest text. */
+.social-training-header-status { font-size: .64rem; }
+.social-stage-intro p { font-size: .75rem; }
+.social-stage-stat > span { font-size: .57rem; }
+.social-case-tabs small { font-size: .55rem; }
+.social-case-tabs strong { font-size: .69rem; }
+.social-case-tabs em { font-size: .59rem; }
+.social-network-bar input,
+.social-network-bar nav { font-size: .62rem; }
+.social-profile-cover span { font-size: .54rem; }
+.social-profile-identity h4 { font-size: .79rem; }
+.social-profile-identity p { font-size: .64rem; }
+.social-profile-identity small,
+.social-profile-identity > button { font-size: .59rem; }
+.social-profile-facts { font-size: .59rem; }
+.social-message-area > header strong { font-size: .69rem; }
+.social-message-area > header span { font-size: .56rem; }
+.social-message p { font-size: .64rem; }
+.social-message > span { font-size: .5rem; }
+.social-findings-heading small { font-size: .56rem; }
+.social-findings-heading h4 { font-size: .82rem; }
+.social-findings-heading p { font-size: .65rem; }
+.social-active-finding > span { font-size: .55rem; }
+.social-active-finding h5 { font-size: .82rem; }
+.social-active-finding > p { font-size: .68rem; }
+.social-active-finding > div { font-size: .65rem; }
+.social-active-finding > div strong { font-size: .57rem; }
+.social-empty-finding p { font-size: .67rem; }
+.social-case-checklist > span { font-size: .62rem; }
+.social-verification-cases > span { font-size: .58rem; }
+.social-verification-cases button strong { font-size: .69rem; }
+.social-verification-cases button small { font-size: .55rem; }
+.social-verification-case > header > span,
+.social-verification-case > header small { font-size: .55rem; }
+.social-verification-case > header h4 { font-size: .86rem; }
+.social-verification-context p,
+.social-verification-question { font-size: .71rem; }
+.social-verification-options button > span { font-size: .57rem; }
+.social-verification-options button p { font-size: .66rem; }
+.social-verification-options button i { font-size: .51rem; }
+.social-verification-feedback strong { font-size: .7rem; }
+.social-verification-feedback p { font-size: .65rem; }
+.social-verification-feedback small { font-size: .57rem; }
+.social-exposure-meter > span { font-size: .55rem; }
+.social-conversation-window > header strong { font-size: .73rem; }
+.social-conversation-window > header span { font-size: .56rem; }
+.social-conversation-exchange p { font-size: .66rem; }
+.social-conversation-exchange span { font-size: .5rem; }
+.social-conversation-exchange > small { font-size: .54rem; }
+.social-conversation-window > footer div { font-size: .57rem; }
+.social-decision-console > header > span { font-size: .56rem; }
+.social-decision-console > header > strong { font-size: .83rem; }
+.social-response-options button > span { font-size: .56rem; }
+.social-response-options button p { font-size: .66rem; }
+.social-response-feedback strong { font-size: .72rem; }
+.social-response-feedback p { font-size: .65rem; }
+.social-response-feedback > button { font-size: .58rem; }
+.social-simulation-result > small { font-size: .57rem; }
+.social-simulation-result > p { font-size: .7rem; }
+.social-simulation-result > div { font-size: .62rem; }
+.social-simulation-result > button { font-size: .59rem; }
+.social-completion-hero p { font-size: .72rem; }
+.social-final-score span { font-size: .54rem; }
+.social-summary-panel small { font-size: .53rem; }
+.social-summary-panel h4 { font-size: .75rem; }
+.social-summary-panel > p { font-size: .65rem; }
+.social-summary-patterns > span { font-size: .55rem; }
+.social-field-rules > header span { font-size: .58rem; }
+.social-field-rules > header p { font-size: .59rem; }
+.social-field-rules strong { font-size: .65rem; }
+.social-field-rules p { font-size: .59rem; }
+.social-summary-note p { font-size: .67rem; }
 
 @media (max-width: 1050px) {
   .social-forensics-grid { grid-template-columns: 1fr; }
@@ -481,7 +592,7 @@
   .social-training-progress button { display: grid; grid-template-columns: 21px 1fr; gap: 5px; }
   .social-training-progress button::after { display: none; }
   .social-training-progress button > span { width: 21px; height: 21px; }
-  .social-training-progress button small { font-size: .39rem; white-space: normal; line-height: 1.25; }
+  .social-training-progress button small { font-size: .5rem; white-space: normal; line-height: 1.25; }
   .social-training-content .lesson-stage { padding: 14px 11px 20px; }
   .social-stage-intro { grid-template-columns: 1fr; gap: 9px; }
   .social-stage-stat { width: 100%; text-align: left; }
