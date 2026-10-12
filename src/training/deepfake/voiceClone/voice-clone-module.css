@@ -14,6 +14,19 @@
 .voice-stage-heading > span { color: #ff79ca; font-size: .7rem; font-weight: 800; letter-spacing: .14em; }
 .voice-stage-heading h2 { margin: 8px 0; color: #fff; font-size: clamp(1.5rem, 3vw, 2.25rem); }
 .voice-stage-heading p { max-width: 800px; margin: 0; color: #9bb5c3; line-height: 1.6; }
+.voice-audio-lesson { margin-bottom: 18px; padding: 16px 18px; border-left: 4px solid #55dff7; color: #dffaff; background: rgba(18, 114, 142, .13); }
+.voice-audio-lesson strong, .voice-audio-disclaimer strong { color: #74e7fa; font-size: .72rem; letter-spacing: .11em; }
+.voice-audio-lesson p, .voice-audio-disclaimer p { margin: 7px 0 0; color: #9db8c5; line-height: 1.55; }
+.voice-audio-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.voice-audio-example { padding: 17px; border: 1px solid rgba(73, 200, 231, .28); border-radius: 8px; background: linear-gradient(135deg, rgba(5, 38, 58, .72), rgba(55, 12, 48, .25)); }
+.voice-audio-example header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.voice-audio-example header strong { color: #effaff; letter-spacing: .04em; }
+.voice-audio-example header span { padding: 4px 7px; border: 1px solid rgba(255, 105, 191, .6); color: #ff8bcf; font-size: .61rem; font-weight: 800; letter-spacing: .1em; }
+.voice-audio-example audio { width: 100%; height: 38px; color-scheme: dark; }
+.voice-audio-example p { min-height: 3.9em; margin: 14px 0 12px; color: #a9c2ce; font-size: .82rem; line-height: 1.55; }
+.voice-audio-example small { display: block; color: #ff80ca; font-size: .59rem; font-weight: 800; letter-spacing: .08em; }
+.voice-audio-disclaimer { margin-top: 18px; padding: 16px 18px; border: 1px solid rgba(255, 103, 190, .33); background: rgba(83, 17, 67, .14); }
+.voice-audio-disclaimer strong { color: #ff83cc; }
 .voice-stage-options, .voice-verification-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .voice-stage-options button, .voice-verification-actions button { min-height: 108px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; padding: 15px; border: 1px solid rgba(70, 199, 232, .27); border-radius: 8px; color: #dfedf3; background: rgba(5, 35, 55, .56); text-align: left; cursor: pointer; }
 .voice-stage-options button:disabled, .voice-verification-actions button:disabled { opacity: .36; cursor: default; }
@@ -95,5 +108,5 @@
 .voice-results-list small { font-size: .67rem; font-weight: 800; letter-spacing: .12em; }
 .voice-results-list .correct small { color: #55e8b5; }
 .voice-results-list .improve small { color: #ffc06d; }
-@media (max-width: 760px) { .voice-module-backdrop { padding: 0; }.voice-module-shell { width: 100%; max-height: 100vh; min-height: 100vh; border-radius: 0; }.voice-module-header { grid-template-columns: 1fr auto; }.voice-module-progress { grid-column: 1 / -1; grid-row: 2; }.voice-stage-options, .voice-clue-grid, .voice-verification-layout, .voice-summary-principles { grid-template-columns: 1fr; }.voice-sequence-board > div { grid-template-columns: 1fr; }.voice-request-card > div { grid-template-columns: 1fr; }.voice-module-content { padding: 18px 13px; }.voice-results-overview { align-items: flex-start; padding: 17px; }.voice-results-list article { grid-template-columns: 36px 1fr; }.voice-results-list article small { grid-column: 2; } }
+@media (max-width: 760px) { .voice-module-backdrop { padding: 0; }.voice-module-shell { width: 100%; max-height: 100vh; min-height: 100vh; border-radius: 0; }.voice-module-header { grid-template-columns: 1fr auto; }.voice-module-progress { grid-column: 1 / -1; grid-row: 2; }.voice-audio-grid, .voice-stage-options, .voice-clue-grid, .voice-verification-layout, .voice-summary-principles { grid-template-columns: 1fr; }.voice-audio-example p { min-height: 0; }.voice-sequence-board > div { grid-template-columns: 1fr; }.voice-request-card > div { grid-template-columns: 1fr; }.voice-module-content { padding: 18px 13px; }.voice-results-overview { align-items: flex-start; padding: 17px; }.voice-results-list article { grid-template-columns: 36px 1fr; }.voice-results-list article small { grid-column: 2; } }
 @media (prefers-reduced-motion: reduce) { .voice-module-progress i { transition: none; } }

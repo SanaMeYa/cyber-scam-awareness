@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   requiredVoiceRequestClues,
   responseOptions,
@@ -10,7 +10,16 @@ import {
 } from './voiceCloneData.js'
 import './voice-clone-module.css'
 
-const moduleSteps = ['HOW IT WORKS', 'INVESTIGATE', 'RESPOND', 'VERIFY', 'RESULTS']
+const moduleSteps = ['LISTEN', 'HOW IT WORKS', 'INVESTIGATE', 'RESPOND', 'VERIFY', 'RESULTS']
+
+const syntheticVoiceExamples = [
+  { id: 'example-01', label: 'Example 01', src: '/audio/deepfake/voice-clone/example-01.mp3', transcript: 'A familiar voice can make a request feel trustworthy. However, recognising a voice is not the same as verifying a person\'s identity.' },
+  { id: 'example-02', label: 'Example 02', src: '/audio/deepfake/voice-clone/example-02.mp3', transcript: 'Voice-cloning systems can create new speech from recordings found in interviews, videos, podcasts, or voice messages.' },
+  { id: 'example-03', label: 'Example 03', src: '/audio/deepfake/voice-clone/example-03.mp3', transcript: 'Some synthetic voices contain noticeable imperfections, but others may sound convincing enough to influence a decision.' },
+  { id: 'example-04', label: 'Example 04', src: '/audio/deepfake/voice-clone/example-04.mp3', transcript: 'Do not rely on hearing robotic sounds or unusual pauses. The safest response is based on context and verification.' },
+  { id: 'example-05', label: 'Example 05', src: '/audio/deepfake/voice-clone/example-05.mp3', transcript: 'If a caller requests money, credentials, or confidential information, end the interaction and use a trusted contact method.' },
+  { id: 'example-06', label: 'Example 06', src: '/audio/deepfake/voice-clone/example-06.mp3', transcript: 'Follow the normal approval process and report suspicious requests, even when the caller sounds like someone you know.' },
+]
 
 function arraysMatch(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index])
@@ -20,6 +29,7 @@ const verificationChoiceOrder = ['contact', 'pause', 'report', 'end', 'confirm']
 
 function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
   const [step, setStep] = useState(0)
+  const audioPlayersRef = useRef(new Map())
   const [cloneSequence, setCloneSequence] = useState([])
   const [cloneSequenceChecked, setCloneSequenceChecked] = useState(false)
   const [selectedClues, setSelectedClues] = useState(() => new Set())
@@ -70,6 +80,7 @@ function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
 
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow
+    const audioPlayers = audioPlayersRef.current
     const closeOnEscape = (event) => {
       if (event.key === 'Escape') onClose()
     }
@@ -78,10 +89,20 @@ function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
     window.addEventListener('keydown', closeOnEscape)
 
     return () => {
+      audioPlayers.forEach((player) => player.pause())
       document.body.style.overflow = previousBodyOverflow
       window.removeEventListener('keydown', closeOnEscape)
     }
   }, [onClose])
+
+  const playOnlySelectedExample = (selectedId) => {
+    audioPlayersRef.current.forEach((player, id) => {
+      if (id !== selectedId && !player.paused) {
+        player.pause()
+        player.currentTime = 0
+      }
+    })
+  }
 
   const selectCloneStage = (stageId) => {
     if (cloneSequence.includes(stageId)) return
@@ -128,8 +149,49 @@ function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
 
         <main className="voice-module-content">
         {step === 0 && (
+          <div className="voice-module-stage voice-audio-intro">
+            <StageHeading kicker="STEP 1 // SYNTHETIC VOICE DEMONSTRATION" title="A familiar voice is not proof of identity" description="Listen to six examples of AI-generated speech. They show why a familiar-sounding voice should never be treated as authentication." />
+
+            <div className="voice-audio-lesson" role="note">
+              <strong>LISTEN FOR THE LESSON, NOT THE FAKE</strong>
+              <p>These examples were generated from reference recordings, allowing each synthetic voice to say words the original speaker did not record. Quality varies, but the safest response does not depend on spotting audio imperfections.</p>
+            </div>
+
+            <div className="voice-audio-grid">
+              {syntheticVoiceExamples.map((example) => (
+                <article className="voice-audio-example" key={example.id}>
+                  <header><strong>{example.label}</strong><span>SYNTHETIC</span></header>
+                  <audio
+                    controls
+                    preload="metadata"
+                    src={example.src}
+                    ref={(player) => {
+                      if (player) audioPlayersRef.current.set(example.id, player)
+                      else audioPlayersRef.current.delete(example.id)
+                    }}
+                    onPlay={() => playOnlySelectedExample(example.id)}
+                    aria-label={`Play ${example.label}, AI-generated audio`}
+                  />
+                  <p>“{example.transcript}”</p>
+                  <small>AI-GENERATED AUDIO — NOT AN AUTHENTIC RECORDING</small>
+                </article>
+              ))}
+            </div>
+
+            <aside className="voice-audio-disclaimer">
+              <strong>EDUCATIONAL DISCLOSURE</strong>
+              <p>All audio examples on this page are AI-generated voice clones created for cybersecurity awareness training. The recordings are not authentic statements, endorsements or representations of the views of the people whose voices they resemble.</p>
+            </aside>
+
+            <StageActions>
+              <button className="voice-module-primary" type="button" onClick={() => setStep(1)}>BEGIN TRAINING</button>
+            </StageActions>
+          </div>
+        )}
+
+        {step === 1 && (
           <div className="voice-module-stage">
-            <StageHeading kicker="STEP 1 // ATTACK ANATOMY" title="How is a voice clone created?" description="Select the four stages in the order an attacker would use them. This simplified model explains the process without requiring technical knowledge." />
+            <StageHeading kicker="STEP 2 // ATTACK ANATOMY" title="How is a voice clone created?" description="Select the four stages in the order an attacker would use them. This simplified model explains the process without requiring technical knowledge." />
 
             <div className="voice-stage-options">
               {[voiceCloneStages[2], voiceCloneStages[0], voiceCloneStages[3], voiceCloneStages[1]].map((stage) => (
@@ -163,14 +225,14 @@ function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
             <StageActions>
               {!cloneSequenceChecked
                 ? <button className="voice-module-primary" type="button" disabled={cloneSequence.length !== voiceCloneStageOrder.length} onClick={checkCloneSequence}>CHECK SEQUENCE</button>
-                : <button className="voice-module-primary" type="button" onClick={() => setStep(1)}>CONTINUE TO INVESTIGATION</button>}
+                : <button className="voice-module-primary" type="button" onClick={() => setStep(2)}>CONTINUE TO INVESTIGATION</button>}
             </StageActions>
           </div>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <div className="voice-module-stage">
-            <StageHeading kicker="STEP 2 // INVESTIGATE THE REQUEST" title="The voice sounds right. Does the request?" description="Marcus appears to call an employee directly. Select every contextual warning sign. Do not rely on whether the audio sounds robotic." />
+            <StageHeading kicker="STEP 3 // INVESTIGATE THE REQUEST" title="The voice sounds right. Does the request?" description="Marcus appears to call an employee directly. Select every contextual warning sign. Do not rely on whether the audio sounds robotic." />
 
             <article className="voice-request-card">
               <header><span className="voice-caller-avatar">MR</span><div><strong>MARCUS REYES</strong><small>Incoming voice message • Identity unverified</small></div><span>0:18</span></header>
@@ -194,14 +256,14 @@ function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
             <div className="voice-clue-progress"><strong>{selectedWarningCount} / {requiredVoiceRequestClues.length}</strong><span>contextual warning signs found</span></div>
 
             <StageActions>
-              <button className="voice-module-primary" type="button" disabled={!selectedClues.size && !incorrectClueSelections.size} onClick={() => setStep(2)}>SUBMIT AND CONTINUE</button>
+              <button className="voice-module-primary" type="button" disabled={!selectedClues.size && !incorrectClueSelections.size} onClick={() => setStep(3)}>SUBMIT AND CONTINUE</button>
             </StageActions>
           </div>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="voice-module-stage">
-            <StageHeading kicker="STEP 3 // MAKE THE DECISION" title="How should the employee respond?" description="The request is urgent and the voice is convincing. Choose the response that provides the strongest defence." />
+            <StageHeading kicker="STEP 4 // MAKE THE DECISION" title="How should the employee respond?" description="The request is urgent and the voice is convincing. Choose the response that provides the strongest defence." />
 
             <div className="voice-response-options">
               {responseOptions.map((option, index) => (
@@ -219,15 +281,15 @@ function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
             )}
 
             <StageActions>
-              <button className="voice-module-secondary" type="button" onClick={() => setStep(1)}>BACK</button>
-              <button className="voice-module-primary" type="button" disabled={!selectedResponse} onClick={() => setStep(3)}>BUILD THE VERIFICATION PATH</button>
+              <button className="voice-module-secondary" type="button" onClick={() => setStep(2)}>BACK</button>
+              <button className="voice-module-primary" type="button" disabled={!selectedResponse} onClick={() => setStep(4)}>BUILD THE VERIFICATION PATH</button>
             </StageActions>
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="voice-module-stage">
-            <StageHeading kicker="STEP 4 // RESTORE TRUST" title="Build the independent verification path" description="Select the actions in the safest order. Each selected position turns green when correct or red when it needs another look." />
+            <StageHeading kicker="STEP 5 // RESTORE TRUST" title="Build the independent verification path" description="Select the actions in the safest order. Each selected position turns green when correct or red when it needs another look." />
 
             <div className="voice-verification-layout">
               <div className="voice-verification-actions">
@@ -254,14 +316,14 @@ function VoiceCloneModule({ onComplete = () => {}, onClose = () => {} }) {
             <StageActions>
               {!verificationChecked
                 ? <button className="voice-module-primary" type="button" disabled={verificationSequence.length !== verificationOrder.length} onClick={() => setVerificationChecked(true)}>CHECK VERIFICATION PATH</button>
-                : <button className="voice-module-primary" type="button" onClick={() => setStep(4)}>VIEW RESULTS</button>}
+                : <button className="voice-module-primary" type="button" onClick={() => setStep(5)}>VIEW RESULTS</button>}
             </StageActions>
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="voice-module-stage voice-module-summary">
-            <StageHeading kicker="STEP 5 // YOUR RESULTS" title={`${resultScore} of ${results.length} safe decisions`} description="Review your decisions below. Incorrect answers do not prevent completion—they show where a real attacker could apply pressure." />
+            <StageHeading kicker="STEP 6 // YOUR RESULTS" title={`${resultScore} of ${results.length} safe decisions`} description="Review your decisions below. Incorrect answers do not prevent completion—they show where a real attacker could apply pressure." />
 
             <div className="voice-results-overview" aria-label={`Result: ${resultScore} out of ${results.length}`}>
               <div className="voice-results-score"><strong>{resultScore}</strong><span>/ {results.length}</span></div>
