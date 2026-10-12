@@ -614,10 +614,6 @@
   .social-empty-finding { min-height: 145px; padding: 11px; }
 }
 
-@media (min-width: 821px) and (min-height: 800px) {
-  .social-training-content.social-forensics-open { overflow-y: hidden; }
-}
-
 @media (max-width: 800px) {
   .social-training-header-status { display: none; }
   .social-case-tabs { grid-template-columns: 1fr; }
