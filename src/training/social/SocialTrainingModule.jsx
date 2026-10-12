@@ -63,7 +63,7 @@ function findEvidenceSegment(text, clue) {
   return null
 }
 
-function EvidenceText({ as = 'span', text, hotspots, revealedClues, onReveal, className = '' }) {
+function EvidenceText({ as = 'span', text, hotspots, revealedClues, onReveal, hintedClueId, className = '' }) {
   const matches = hotspots
     .map((clue) => ({ clue, match: findEvidenceSegment(text, clue) }))
     .filter(({ match }) => match)
@@ -83,7 +83,7 @@ function EvidenceText({ as = 'span', text, hotspots, revealedClues, onReveal, cl
     const found = revealedClues.includes(clue.id)
     content.push(
       <button
-        className={`social-inline-evidence ${found ? 'found' : ''}`}
+        className={`social-inline-evidence ${found ? 'found' : ''} ${!found && hintedClueId === clue.id ? 'hint' : ''}`}
         type="button"
         key={clue.id}
         onClick={() => onReveal(clue.id)}
@@ -102,7 +102,7 @@ function EvidenceText({ as = 'span', text, hotspots, revealedClues, onReveal, cl
   return <Element className={className}>{content}</Element>
 }
 
-function PlatformProfile({ platform, example, revealedClues, onReveal }) {
+function PlatformProfile({ platform, example, revealedClues, onReveal, hintedClueId }) {
   const ui = platformUi[platform]
   const stats = example.stats
   const statsText = stats ? `${stats.posts} posts • ${stats.followers} followers • following ${stats.following}` : ''
@@ -126,17 +126,17 @@ function PlatformProfile({ platform, example, revealedClues, onReveal }) {
         <ProfileAvatar example={example} />
         <div>
           <h4>{example.profileName}{example.verifiedBadge && <span className="social-verified-badge" title="Verified profile">✓</span>}</h4>
-          <EvidenceText as="p" text={example.handle} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />
-          <EvidenceText as="small" text={example.meta} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />
+          <EvidenceText as="p" text={example.handle} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} hintedClueId={hintedClueId} />
+          <EvidenceText as="small" text={example.meta} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} hintedClueId={hintedClueId} />
         </div>
         <button type="button" tabIndex="-1" aria-hidden="true">{platform === 'linkedin' ? 'Connect' : 'Message'}</button>
       </section>
 
       {(stats || example.roleHighlight || example.mutualFriends) && (
         <div className="social-profile-facts">
-          {stats && <EvidenceText as="span" className="social-stats-evidence" text={statsText} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />}
-          {example.roleHighlight && <span className="wide"><strong>Claimed role</strong><EvidenceText text={example.roleHighlight} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} /></span>}
-          {example.mutualFriends && <span className="wide"><strong>Network</strong><EvidenceText text={example.mutualFriends} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} /></span>}
+          {stats && <EvidenceText as="span" className="social-stats-evidence" text={statsText} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} hintedClueId={hintedClueId} />}
+          {example.roleHighlight && <span className="wide"><strong>Claimed role</strong><EvidenceText text={example.roleHighlight} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} hintedClueId={hintedClueId} /></span>}
+          {example.mutualFriends && <span className="wide"><strong>Network</strong><EvidenceText text={example.mutualFriends} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} hintedClueId={hintedClueId} /></span>}
         </div>
       )}
 
@@ -145,7 +145,7 @@ function PlatformProfile({ platform, example, revealedClues, onReveal }) {
         <div className="social-message-thread">
           {example.chatHistory?.map((message, index) => (
             <div className="social-message" key={`${message.time}-${index}`}>
-              <EvidenceText as="p" text={message.text} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} />
+              <EvidenceText as="p" text={message.text} hotspots={example.hotspots} revealedClues={revealedClues} onReveal={onReveal} hintedClueId={hintedClueId} />
               <span>{message.time}</span>
             </div>
           ))}
@@ -204,6 +204,7 @@ export default function SocialTrainingModule({
   const [responseTurn, setResponseTurn] = useState(0)
   const [responseHistory, setResponseHistory] = useState([])
   const [simulationFinished, setSimulationFinished] = useState(false)
+  const [hintedClueId, setHintedClueId] = useState(null)
   const contentRef = useRef(null)
   const conversationRef = useRef(null)
   const ui = platformUi[platform]
@@ -222,6 +223,7 @@ export default function SocialTrainingModule({
 
   const currentExample = inspectionExamples[currentExampleIndex] ?? inspectionExamples[0]
   const currentRevealed = revealedClues[currentExample.id] ?? []
+  const firstUnresolvedClueId = currentExample.hotspots.find((clue) => !currentRevealed.includes(clue.id))?.id ?? null
   const totalClues = inspectionExamples.reduce((total, example) => total + example.hotspots.length, 0)
   const foundClues = Object.values(revealedClues).reduce((total, ids) => total + ids.length, 0)
   const allCluesFound = foundClues === totalClues
@@ -232,6 +234,16 @@ export default function SocialTrainingModule({
   const currentResponseRecord = responseHistory[responseTurn]
   const currentResponseAnswer = currentResponseRecord?.option.id
   const allResponsesMade = responseHistory.length === responseScenario.turns.length
+
+  useEffect(() => {
+    if (step !== 0 || currentRevealed.length > 0) return undefined
+
+    const hintTimer = window.setTimeout(() => {
+      setHintedClueId(firstUnresolvedClueId)
+    }, 15000)
+
+    return () => window.clearTimeout(hintTimer)
+  }, [step, currentExample.id, currentRevealed.length, firstUnresolvedClueId])
 
   const safeResponseCount = useMemo(
     () => responseHistory.filter(({ option }) => option.risk === 0).length,
@@ -251,10 +263,16 @@ export default function SocialTrainingModule({
       : step === 2 ? simulationFinished : true
 
   const revealClue = (clueId) => {
+    setHintedClueId(null)
     setRevealedClues((current) => {
       const existing = current[currentExample.id] ?? []
       return existing.includes(clueId) ? current : { ...current, [currentExample.id]: [...existing, clueId] }
     })
+  }
+
+  const selectInspectionExample = (index) => {
+    setHintedClueId(null)
+    setCurrentExampleIndex(index)
   }
 
   const chooseVerificationAnswer = (optionId) => {
@@ -293,7 +311,7 @@ export default function SocialTrainingModule({
           ))}
         </nav>
 
-        <div className="email-lesson-content social-training-content" ref={contentRef}>
+        <div className={`email-lesson-content social-training-content ${step === 0 ? 'social-forensics-open' : ''}`} ref={contentRef}>
           {step === 0 && (
             <div className="lesson-stage social-forensics-stage">
               <div className="social-stage-intro">
@@ -306,14 +324,14 @@ export default function SocialTrainingModule({
                   const found = (revealedClues[example.id] ?? []).length
                   const complete = found === example.hotspots.length
                   return (
-                    <button className={`${index === currentExampleIndex ? 'active' : ''} ${complete ? 'complete' : ''}`} type="button" role="tab" aria-selected={index === currentExampleIndex} key={example.id} onClick={() => setCurrentExampleIndex(index)}>
+                    <button className={`${index === currentExampleIndex ? 'active' : ''} ${complete ? 'complete' : ''}`} type="button" role="tab" aria-selected={index === currentExampleIndex} key={example.id} onClick={() => selectInspectionExample(index)}>
                       <span>{complete ? '✓' : `0${index + 1}`}</span><div><small>{example.tag.replace(/[^\w\s]/g, '').trim()}</small><strong>{example.type}</strong></div><em>{found}/{example.hotspots.length}</em>
                     </button>
                   )
                 })}
               </div>
 
-              <div className="social-forensics-grid"><PlatformProfile platform={platform} example={currentExample} revealedClues={currentRevealed} onReveal={revealClue} /><FindingPanel example={currentExample} revealedClues={currentRevealed} /></div>
+              <div className="social-forensics-grid"><PlatformProfile platform={platform} example={currentExample} revealedClues={currentRevealed} onReveal={revealClue} hintedClueId={hintedClueId} /><FindingPanel example={currentExample} revealedClues={currentRevealed} /></div>
             </div>
           )}
 
