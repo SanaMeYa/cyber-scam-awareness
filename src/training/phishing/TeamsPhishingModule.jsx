@@ -51,6 +51,98 @@ function TeamsInvestigationWindow({ investigationCase, foundClueIds, hintedClueI
   )
 }
 
+const shuffledChainIds = ['interaction', 'damage', 'entry', 'access', 'pressure']
+
+function TeamsAttackReconstruction({ placedIds, activeIndex, replayComplete, onPlace, onInspect, onReplayComplete }) {
+  const [selectedId, setSelectedId] = useState(null)
+  const [feedback, setFeedback] = useState(null)
+  const [replayIndex, setReplayIndex] = useState(-1)
+  const [replaying, setReplaying] = useState(false)
+  const evidenceDeck = shuffledChainIds.map((id) => teamsAttackChain.find((node) => node.id === id))
+  const activeNode = teamsAttackChain[activeIndex]
+  const allPlaced = placedIds.size === teamsAttackChain.length
+
+  useEffect(() => {
+    if (!replaying) return undefined
+    if (replayIndex < teamsAttackChain.length - 1) {
+      const timer = window.setTimeout(() => setReplayIndex((current) => current + 1), 850)
+      return () => window.clearTimeout(timer)
+    }
+    const timer = window.setTimeout(() => {
+      setReplaying(false)
+      onReplayComplete(true)
+    }, 1050)
+    return () => window.clearTimeout(timer)
+  }, [onReplayComplete, replayIndex, replaying])
+
+  const placeEvidence = (slotIndex, cardId = selectedId) => {
+    if (!cardId || placedIds.has(cardId) || replaying) return
+    const expected = teamsAttackChain[slotIndex]
+    if (expected.id !== cardId) {
+      setFeedback({ type: 'error', text: 'That event does not fit here yet. Follow the cause and effect: what must happen before this phase is possible?' })
+      setSelectedId(cardId)
+      return
+    }
+    onPlace(slotIndex)
+    setSelectedId(null)
+    setFeedback({ type: 'success', text: `${expected.title} locked into the incident timeline. Inspect the new phase to see its impact.` })
+  }
+
+  const startReplay = () => {
+    if (!allPlaced || replaying) return
+    onReplayComplete(false)
+    setFeedback(null)
+    setReplayIndex(0)
+    setReplaying(true)
+  }
+
+  return (
+    <section className="teams-reconstruction" aria-label="Interactive Teams attack reconstruction">
+      <div className="teams-reconstruction-toolbar">
+        <div><span className="teams-reconstruction-live" /> INCIDENT RECONSTRUCTION</div>
+        <p>Select or drag each evidence card into the phase where it belongs.</p>
+        <span>{placedIds.size} / {teamsAttackChain.length} PLACED</span>
+      </div>
+
+      <div className="teams-evidence-deck" aria-label="Shuffled incident evidence">
+        {evidenceDeck.map((node) => {
+          const placed = placedIds.has(node.id)
+          return <button type="button" draggable={!placed && !replaying} className={`${selectedId === node.id ? 'selected' : ''} ${placed ? 'placed' : ''}`} disabled={placed || replaying} onClick={() => setSelectedId(node.id)} onDragStart={(event) => { event.dataTransfer.setData('text/plain', node.id); setSelectedId(node.id) }} key={node.id}><span>{placed ? '✓' : node.icon}</span><div><small>INCIDENT EVIDENCE</small><strong>{node.title}</strong><em>{node.subtitle}</em></div><b>{placed ? 'PLACED' : 'DRAG'}</b></button>
+        })}
+      </div>
+
+      <div className={`teams-timeline-console ${allPlaced ? 'assembled' : ''} ${replaying ? 'replaying' : ''}`}>
+        <header><div><span className="teams-console-logo">T</span><p><strong>Teams incident timeline</strong><small>{allPlaced ? 'Attack path assembled • replay available' : 'Reconstruct the path from initial DM to company impact'}</small></p></div><span className="teams-console-status">{replaying ? '● LIVE REPLAY' : replayComplete ? '✓ REPLAY COMPLETE' : 'AWAITING EVIDENCE'}</span></header>
+        <div className="teams-chain-slots">
+          {teamsAttackChain.map((node, index) => {
+            const placed = placedIds.has(node.id)
+            const replayActive = replaying && replayIndex === index
+            const replayPassed = (replaying || replayComplete) && replayIndex > index
+            return <button type="button" className={`${placed ? 'filled' : ''} ${activeIndex === index && placed ? 'inspected' : ''} ${selectedId && !placed ? 'ready' : ''} ${replayActive ? 'replay-active' : ''} ${replayPassed || replayComplete ? 'replay-passed' : ''}`} aria-label={placed ? `Inspect phase ${index + 1}: ${node.title}` : `Place evidence into phase ${index + 1}`} onClick={() => placed ? onInspect(index) : placeEvidence(index)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); placeEvidence(index, event.dataTransfer.getData('text/plain')) }} key={node.id}><small>PHASE {String(index + 1).padStart(2, '0')}</small>{placed ? <><span>{node.icon}</span><strong>{node.title}</strong><em>{node.subtitle}</em></> : <><span className="teams-empty-slot">＋</span><strong>DROP EVIDENCE</strong><em>{selectedId ? 'Place selected event here' : 'Select a card above'}</em></>}</button>
+          })}
+          <i className="teams-replay-packet" style={{ '--replay-left': `${10 + Math.max(0, replayIndex) * 20}%` }} aria-hidden="true">↗</i>
+        </div>
+        {feedback && <div className={`teams-placement-feedback ${feedback.type}`} role="status"><span>{feedback.type === 'success' ? '✓' : '!'}</span>{feedback.text}</div>}
+      </div>
+
+      <div className="teams-reconstruction-lower">
+        <article className="teams-chain-detail" key={activeNode.id}>
+          <header><span>{activeNode.icon}</span><div><small>PHASE {activeIndex + 1} // INCIDENT ANALYSIS</small><h4>{activeNode.title}</h4></div></header>
+          <p>{activeNode.detail}</p>
+          <div className="teams-chain-insights"><section><span>BUSINESS EFFECT</span><p>{activeNode.impact}</p></section><section><span>BREAK THE CHAIN</span><p>{activeNode.defence}</p></section></div>
+        </article>
+
+        <button type="button" className={`teams-replay-trigger ${allPlaced ? 'ready' : ''} ${replaying ? 'running' : ''} ${replayComplete ? 'complete' : ''}`} disabled={!allPlaced || replaying} onClick={startReplay}>
+          <span className="teams-replay-orbit"><i>T</i><b /><b /><b /></span>
+          <small>{!allPlaced ? 'ASSEMBLE ALL FIVE PHASES' : replaying ? `REPLAYING PHASE ${replayIndex + 1}` : replayComplete ? 'ATTACK REPLAY COMPLETE' : 'PATH READY'}</small>
+          <strong>{replayComplete ? 'REPLAY THE INCIDENT' : 'RUN THE ATTACK REPLAY'}</strong>
+          <em>{!allPlaced ? 'The replay unlocks when the timeline is complete.' : replaying ? teamsAttackChain[replayIndex]?.title : replayComplete ? 'Run it again or inspect any phase.' : 'Watch the Teams DM move through the company.'}</em>
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export default function TeamsPhishingModule({ completed, onComplete, onClose }) {
   const [stage, setStage] = useState(0)
   const [caseIndex, setCaseIndex] = useState(0)
@@ -59,6 +151,7 @@ export default function TeamsPhishingModule({ completed, onComplete, onClose }) 
   const [activeFindingId, setActiveFindingId] = useState(null)
   const [exploredChainIds, setExploredChainIds] = useState(() => new Set())
   const [activeChainIndex, setActiveChainIndex] = useState(0)
+  const [chainReplayComplete, setChainReplayComplete] = useState(false)
   const [responseTurn, setResponseTurn] = useState(0)
   const [responseHistory, setResponseHistory] = useState([])
   const [responseFinished, setResponseFinished] = useState(false)
@@ -82,12 +175,12 @@ export default function TeamsPhishingModule({ completed, onComplete, onClose }) 
 
   const revealClue = (clueId) => { setHintedClueId(null); setActiveFindingId(clueId); setFoundClueIds((current) => new Set(current).add(clueId)) }
   const selectCase = (index) => { setHintedClueId(null); setActiveFindingId(null); setCaseIndex(index) }
-  const exploreChainNode = (index) => { if (index > exploredChainIds.size) return; setActiveChainIndex(index); setExploredChainIds((current) => new Set(current).add(teamsAttackChain[index].id)) }
+  const placeChainNode = (index) => { setActiveChainIndex(index); setExploredChainIds((current) => new Set(current).add(teamsAttackChain[index].id)) }
   const chooseResponse = (option) => { if (!currentResponse) setResponseHistory((current) => [...current, { turn: currentTurn, option }]) }
   const resetConversation = () => { setResponseTurn(0); setResponseHistory([]); setResponseFinished(false) }
-  const stageComplete = stage === 0 ? foundClueIds.size === totalClues : stage === 1 ? exploredChainIds.size === teamsAttackChain.length : stage === 2 ? responseFinished : true
+  const stageComplete = stage === 0 ? foundClueIds.size === totalClues : stage === 1 ? exploredChainIds.size === teamsAttackChain.length && chainReplayComplete : stage === 2 ? responseFinished : true
   const advance = () => { if (!stageComplete) return; if (stage < 3) setStage((current) => current + 1); else { onComplete(); onClose() } }
-  const stageProgress = stage === 0 ? foundClueIds.size / totalClues : stage === 1 ? exploredChainIds.size / teamsAttackChain.length : stage === 2 ? responseHistory.length / teamsResponseScenario.turns.length : 1
+  const stageProgress = stage === 0 ? foundClueIds.size / totalClues : stage === 1 ? (exploredChainIds.size / teamsAttackChain.length) * .8 + (chainReplayComplete ? .2 : 0) : stage === 2 ? responseHistory.length / teamsResponseScenario.turns.length : 1
   const overallProgress = Math.round(((stage + stageProgress) / 4) * 100)
 
   return (
@@ -102,8 +195,8 @@ export default function TeamsPhishingModule({ completed, onComplete, onClose }) 
             <div className="teams-investigation-layout"><TeamsInvestigationWindow investigationCase={currentCase} foundClueIds={foundClueIds} hintedClueId={hintedClueId} onReveal={revealClue} /><aside className="teams-finding-panel"><header><span className="teams-scan-icon">⌖</span><div><small>LIVE FINDINGS</small><strong>{currentCaseFound === currentCase.clues.length ? 'Case evidence complete' : 'Select suspicious details'}</strong></div><em>{currentCaseFound}/{currentCase.clues.length}</em></header>{activeFinding && currentCase.clues.some((clue) => clue.id === activeFinding.id) ? <article className="teams-active-finding" key={activeFinding.id}><span>WARNING SIGN IDENTIFIED</span><h4>{activeFinding.title}</h4><p>{activeFinding.explanation}</p><div><strong>SAFER RESPONSE</strong><p>{activeFinding.safer}</p></div></article> : <div className="teams-empty-finding"><span>◎</span><p>Inspect the Teams window and select the details that feel inconsistent, pressured or unsafe.</p><small>One clue will flash after 15 seconds if you need help getting started.</small></div>}<div className="teams-finding-list">{currentCase.clues.map((clue) => <span className={foundClueIds.has(clue.id) ? 'found' : ''} key={clue.id}><i>{foundClueIds.has(clue.id) ? '✓' : '○'}</i>{clue.label}</span>)}</div></aside></div>
           </div>}
           {stage === 1 && <div className="teams-stage teams-chain-stage">
-            <div className="teams-stage-intro"><div><span>STAGE 02 // ATTACK PATH</span><h3>Trace how one Teams message becomes company damage</h3><p>Follow the attack from the first DM to its operational impact. Activate each connected stage to expose what the attacker gains and where defenders can break the chain.</p></div><div className="teams-stage-meter"><strong>{exploredChainIds.size}<small> / {teamsAttackChain.length}</small></strong><span>STAGES TRACED</span></div></div>
-            <section className="teams-attack-map"><div className="teams-chain-track" aria-label="Teams phishing attack chain">{teamsAttackChain.map((node, index) => { const explored = exploredChainIds.has(node.id); const available = index <= exploredChainIds.size; return <button type="button" className={`${activeChainIndex === index ? 'active' : ''} ${explored ? 'explored' : ''} ${available ? 'available' : ''}`} disabled={!available} onClick={() => exploreChainNode(index)} key={node.id}><span>{explored ? '✓' : node.icon}</span><small>PHASE {index + 1}</small><strong>{node.title}</strong><em>{node.subtitle}</em></button> })}</div><article className="teams-chain-detail" key={teamsAttackChain[activeChainIndex].id}><header><span>{teamsAttackChain[activeChainIndex].icon}</span><div><small>PHASE {activeChainIndex + 1} ANALYSIS</small><h4>{teamsAttackChain[activeChainIndex].title}</h4></div></header><p>{teamsAttackChain[activeChainIndex].detail}</p><div className="teams-chain-insights"><section><span>BUSINESS EFFECT</span><p>{teamsAttackChain[activeChainIndex].impact}</p></section><section><span>BREAK THE CHAIN</span><p>{teamsAttackChain[activeChainIndex].defence}</p></section></div>{!exploredChainIds.has(teamsAttackChain[activeChainIndex].id) && <button type="button" onClick={() => exploreChainNode(activeChainIndex)}>ACTIVATE THIS PHASE →</button>}</article></section>
+            <div className="teams-stage-intro"><div><span>STAGE 02 // INCIDENT RECONSTRUCTION</span><h3>Build the attack path—then watch the breach unfold</h3><p>The incident evidence is out of order. Reconstruct the chain from the first Teams DM to company damage, inspect each consequence, then launch the animated attack replay.</p></div><div className="teams-stage-meter"><strong>{exploredChainIds.size}<small> / {teamsAttackChain.length}</small></strong><span>{chainReplayComplete ? 'REPLAY COMPLETE' : 'PHASES PLACED'}</span></div></div>
+            <TeamsAttackReconstruction placedIds={exploredChainIds} activeIndex={activeChainIndex} replayComplete={chainReplayComplete} onPlace={placeChainNode} onInspect={setActiveChainIndex} onReplayComplete={setChainReplayComplete} />
           </div>}
           {stage === 2 && <div className="teams-stage teams-outcome-stage">
             <div className="teams-stage-intro"><div><span>STAGE 03 // CONTROL THE OUTCOME</span><h3>Respond inside a live impersonation attempt</h3><p>Every choice changes the next message. Keep normal business controls intact while the attacker changes tactics.</p></div><div className={`teams-risk-meter ${exposure >= 70 ? 'critical' : exposure > 0 ? 'elevated' : ''}`}><strong>{Math.min(100, exposure)}%</strong><span>COMPROMISE RISK</span><i><b style={{ width: `${Math.min(100, exposure)}%` }} /></i></div></div>
@@ -116,7 +209,7 @@ export default function TeamsPhishingModule({ completed, onComplete, onClose }) 
             <section className="teams-field-rules"><header><span>TEAMS DM FIELD RULES</span><p>Four behaviours to use after the simulation.</p></header><div>{teamsFieldRules.map((rule) => <article key={rule.title}><span>{rule.icon}</span><div><strong>{rule.title}</strong><p>{rule.text}</p></div></article>)}</div></section><div className="teams-summary-warning"><span>!</span><p><strong>Remember:</strong> Teams is a communication channel, not proof of identity. External accounts, guest access and compromised internal accounts can all display familiar names and photos.</p></div><div className="teams-completion-callout"><span>✓</span><div><strong>MODULE READY TO COMPLETE</strong><p>{completed ? 'You have reviewed the complete Teams DM Defence Lab again.' : 'Complete the module to unlock Teams / Slack DM attacks in gameplay.'}</p></div></div>
           </div>}
         </div>
-        <footer className="email-lesson-footer teams-module-footer"><div><strong>{stage === 0 ? `${foundClueIds.size}/${totalClues}` : stage === 1 ? `${exploredChainIds.size}/${teamsAttackChain.length}` : stage === 2 ? `${responseHistory.length}/${teamsResponseScenario.turns.length}` : `${score}%`}</strong><span>{stage === 0 ? 'EVIDENCE FOUND' : stage === 1 ? 'PHASES TRACED' : stage === 2 ? 'DECISIONS MADE' : 'FINAL SCORE'}</span></div><button className="lesson-secondary" type="button" onClick={() => setStage((current) => Math.max(0, current - 1))} disabled={stage === 0}>BACK</button><button className="lesson-primary" type="button" disabled={!stageComplete} onClick={advance}>{stage < 3 ? 'CONTINUE →' : completed ? 'COMPLETE REVIEW ✓' : 'COMPLETE MODULE ✓'}</button></footer>
+        <footer className="email-lesson-footer teams-module-footer"><div><strong>{stage === 0 ? `${foundClueIds.size}/${totalClues}` : stage === 1 ? `${exploredChainIds.size}/${teamsAttackChain.length}${chainReplayComplete ? ' ✓' : ''}` : stage === 2 ? `${responseHistory.length}/${teamsResponseScenario.turns.length}` : `${score}%`}</strong><span>{stage === 0 ? 'EVIDENCE FOUND' : stage === 1 ? chainReplayComplete ? 'REPLAY COMPLETE' : 'PATH ASSEMBLED' : stage === 2 ? 'DECISIONS MADE' : 'FINAL SCORE'}</span></div><button className="lesson-secondary" type="button" onClick={() => setStage((current) => Math.max(0, current - 1))} disabled={stage === 0}>BACK</button><button className="lesson-primary" type="button" disabled={!stageComplete} onClick={advance}>{stage < 3 ? 'CONTINUE →' : completed ? 'COMPLETE REVIEW ✓' : 'COMPLETE MODULE ✓'}</button></footer>
       </section>
     </div>
   )
