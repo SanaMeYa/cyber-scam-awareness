@@ -93,6 +93,7 @@ function generateNarrationBlob(text, voice) {
 // playback begins so narration does not pause between sentences while it
 // waits for the next chunk to finish generating.
 const KOKORO_NARRATION_TIMEOUT_MS = 180_000
+const KOKORO_INITIAL_BUFFER_CHUNKS = 3
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
@@ -688,11 +689,12 @@ function Gameplay() {
 
     const chunkPromises = getCachedNarrationChunks(narrationText)
 
-    // Prepare every chunk before playback starts. Previously, playback began
-    // as soon as chunk 1 was available, which could leave a long silent gap
-    // while chunk 2 was still being generated. Cached narration still starts
-    // almost immediately because every promise resolves from IndexedDB.
-    withTimeout(Promise.all(chunkPromises), KOKORO_NARRATION_TIMEOUT_MS)
+    // Buffer several chunks before playback starts. One chunk was not enough
+    // to prevent a gap on slower devices, while waiting for every chunk made
+    // uncached targets appear not to work. Three chunks provide a useful
+    // head start while the remaining narration continues generating.
+    const initialBuffer = chunkPromises.slice(0, KOKORO_INITIAL_BUFFER_CHUNKS)
+    withTimeout(Promise.all(initialBuffer), KOKORO_NARRATION_TIMEOUT_MS)
       .then(() => {
         if (token !== narrationTokenRef.current) return
         playChunkAt(chunkPromises, 0)
