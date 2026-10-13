@@ -13,12 +13,23 @@
 import { KokoroTTS } from 'kokoro-js'
 
 let ttsPromise = null
-function getTts() {
-  ttsPromise ??= KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', {
-    dtype: 'q8',
-    device: 'wasm',
-  })
-  return ttsPromise
+async function getTts() {
+  if (!ttsPromise) {
+    ttsPromise = KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', {
+      dtype: 'q8',
+      device: 'wasm',
+    })
+  }
+
+  try {
+    return await ttsPromise
+  } catch (error) {
+    // Do not permanently cache a rejected model download/initialisation.
+    // A later Play or Replay press can retry after a temporary network,
+    // IndexedDB, or WebAssembly failure.
+    ttsPromise = null
+    throw error
+  }
 }
 
 self.onmessage = async (event) => {
