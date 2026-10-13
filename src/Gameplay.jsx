@@ -88,11 +88,11 @@ function generateNarrationBlob(text, voice) {
 }
 
 // A cold Kokoro start must download and initialise the model before it can
-// generate the first chunk. That can take tens of seconds, especially after
-// clearing the browser cache. A 400 ms deadline always selected the robotic
-// browser fallback even when Kokoro was working correctly, so the first load
-// now gets a realistic window while the UI displays "GENERATING NARRATION".
-const KOKORO_FIRST_CHUNK_TIMEOUT_MS = 120_000
+// generate the narration. That can take tens of seconds, especially after
+// clearing the browser cache. The full set of chunks is prepared before
+// playback begins so narration does not pause between sentences while it
+// waits for the next chunk to finish generating.
+const KOKORO_NARRATION_TIMEOUT_MS = 180_000
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
@@ -688,12 +688,11 @@ function Gameplay() {
 
     const chunkPromises = getCachedNarrationChunks(narrationText)
 
-    // Race Kokoro's first chunk against a generous cold-start timeout. A cache hit (from
-    // IndexedDB or already generated this session) resolves almost
-    // instantly. On a genuine cache miss, the loading state remains visible
-    // while Kokoro downloads/initialises. Browser speech is used only if
-    // Kokoro actually fails or exceeds the full cold-start window.
-    withTimeout(chunkPromises[0], KOKORO_FIRST_CHUNK_TIMEOUT_MS)
+    // Prepare every chunk before playback starts. Previously, playback began
+    // as soon as chunk 1 was available, which could leave a long silent gap
+    // while chunk 2 was still being generated. Cached narration still starts
+    // almost immediately because every promise resolves from IndexedDB.
+    withTimeout(Promise.all(chunkPromises), KOKORO_NARRATION_TIMEOUT_MS)
       .then(() => {
         if (token !== narrationTokenRef.current) return
         playChunkAt(chunkPromises, 0)
